@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>A Triangle and a Square</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <link rel="stylesheet" media="all" href="public/stylesheets/normalize.css" />
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div class="container">
+    <div class="page">
+
+      <div class="header">
+        
+          
+          <h1 id="a-triangle-and-a-square">A Triangle and a Square</h1>
+
+          
+        
+
+        
+          <div class="toc">
+            <h3>Table of Contents</h3>
+            <ol>
+              
+                
+                <li>
+                  <a class="source" href="app.html">
+                    app.litcoffee
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="gl.html">
+                    gl.litcoffee
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="mesh.html">
+                    mesh.litcoffee
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="objloader.html">
+                    objloader.litcoffee
+                  </a>
+                </li>
+              
+                
+                <li>
+                  <a class="source" href="user.html">
+                    user.litcoffee
+                  </a>
+                </li>
+              
+            </ol>
+          </div>
+        
+      </div>
+
+      
+        
+        <h2 id="what-is-this-">What is this?</h2>
+
+        
+      
+        
+        <p>This is yet another attempt to get started with WebGL programming using CoffeeScript. The choice of using
+literate CoffeeScript is because I have been curious about how effective it can actually be to use prose
+while formulating the software. After all the larger part of the time coding is usually taken by hammering
+out the method rather then actually coding it.</p>
+<h2 id="the-program">The program</h2>
+
+        
+      
+        
+        <p>This is an OOP approach to the Triangle and Square tutorial. This way less stuff will have to be moved around between
+the methods and hopefully it will also help in the task of putting stuff where it belongs.</p>
+<h3 id="dependencies">Dependencies</h3>
+
+        
+          <div class='highlight'><pre>Mesh = <span class="hljs-built_in">require</span> <span class="hljs-string">'app/mesh'</span></pre></div>
+        
+      
+        
+        <h3 id="-a-name-the-class-a-gl"><a name="the-class"></a>GL</h3>
+<p>First we need the class itself. I will call it GL at the moment and see if that sticks.</p>
+
+        
+          <div class='highlight'><pre><span class="hljs-built_in">module</span>.<span class="hljs-built_in">exports</span> = <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">GL</span></span></pre></div>
+        
+      
+        
+        <h4 id="-a-name-constructor-a-constructor"><a name="constructor"></a>Constructor</h4>
+<p>The constructor need the element id of the canvas tag where we should render our OpenGL
+scene.</p>
+
+        
+          <div class='highlight'><pre>	<span class="hljs-attribute">constructor</span>: <span class="hljs-function"><span class="hljs-params">( canvasElementId )</span> -&gt;</span></pre></div>
+        
+      
+        
+        <p>Get the element and keep a reference to it as a member. It will come in handy from time to time.</p>
+
+        
+          <div class='highlight'><pre>		<span class="hljs-property">@_canvasElement</span> = <span class="hljs-built_in">document</span>.getElementById canvasElementId</pre></div>
+        
+      
+        
+        <p>Get the context of the canvas using the <code>experimental-webgl</code> argument. There might be something like <code>webgl</code> that could
+work but this works and will have to do for now. This might throw an exception and we have to catch that. It might be
+better to just let the exception fall through but this way a better error message can be shown. I will still throw the
+exception but now I can couple it with a console line to make sure I know why the program halted.</p>
+
+        
+          <div class='highlight'><pre>		<span class="hljs-keyword">try</span>
+			<span class="hljs-property">@_gl</span> = <span class="hljs-property">@_canvasElement</span>.getContext <span class="hljs-string">'experimental-webgl'</span>
+		<span class="hljs-keyword">catch</span> error
+			<span class="hljs-built_in">console</span>.log <span class="hljs-string">'Failed to initialize WebGL using the element '</span> + canvas + <span class="hljs-string">'. Error:\n'</span> + error
+			<span class="hljs-keyword">throw</span> error</pre></div>
+        
+      
+        
+        <p>I stick the width and height of the canvas element to the context object.</p>
+
+        
+          <div class='highlight'><pre>		<span class="hljs-property">@_gl</span>.viewportWidth = <span class="hljs-property">@_canvasElement</span>.width
+		<span class="hljs-property">@_gl</span>.viewportHeight = <span class="hljs-property">@_canvasElement</span>.height</pre></div>
+        
+      
+        
+        <p>Clear the buffer and enable depth testing</p>
+
+        
+          <div class='highlight'><pre>		<span class="hljs-property">@_gl</span>.clearColor <span class="hljs-number">0.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>
+		<span class="hljs-property">@_gl</span>.enable <span class="hljs-property">@_gl</span>.DEPTH_TEST</pre></div>
+        
+      
+        
+        <h4 id="-a-name-fetchshaderfromelement-a-fetchshaderfromelement"><a name="fetchShaderFromElement"></a>fetchShaderFromElement</h4>
+<p>The shaders are currently located in their own <code>&lt;script&gt;</code> tags in the HTML. To facilitate the swap to external files or
+any other method of retreiving these I create a method for fetching the shaders. This can later be replaced by any
+other means of loading the shader code.</p>
+
+        
+          <div class='highlight'><pre>	<span class="hljs-attribute">fetchShaderFromElement</span>: <span class="hljs-function"><span class="hljs-params">( shaderElementId )</span> -&gt;</span>
+		shaderScript = <span class="hljs-built_in">document</span>.getElementById shaderElementId</pre></div>
+        
+      
+        
+        <p>If the given element doesn’t exist we stop the execution straight away. Same thing if it’s not a shader element. (It
+should be a script tag with the proper type.)</p>
+
+        
+          <div class='highlight'><pre>		<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> Error <span class="hljs-string">'No shader with id: '</span> + shaderElementId <span class="hljs-keyword">unless</span> shaderScript
+		<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> Error <span class="hljs-string">'Not a shader element: '</span> + shaderElement <span class="hljs-keyword">unless</span> shaderScript.type == <span class="hljs-string">'x-shader/x-fragment'</span> <span class="hljs-keyword">or</span> shaderScript.type == <span class="hljs-string">'x-shader/x-vertex'</span></pre></div>
+        
+      
+        
+        <p>The shader code is just text so we can just traverse through the element and glue together all nodes with nodeType 3
+(text nodes) to a combined string with the shader code in it.
+<em>NOTE:</em> This might not be the best way to do this. I think I can actually use either the
+textContent or the innerHTML properties. I’ll try that later.</p>
+
+        
+          <div class='highlight'><pre>		shaderCode = <span class="hljs-string">""</span>
+		currentScriptNode = shaderScript.firstChild
+
+		<span class="hljs-keyword">while</span> currentScriptNode
+			shaderCode += currentScriptNode.textContent <span class="hljs-keyword">if</span> currentScriptNode.nodeType == <span class="hljs-number">3</span>
+			currentScriptNode = currentScriptNode.nextSibling
+
+		<span class="hljs-keyword">return</span> shaderCode;</pre></div>
+        
+      
+        
+        <h4 id="-a-name-compileshader-a-compileshader"><a name="compileShader"></a>compileShader</h4>
+<p>To use the shaders they will have to be compiled. This utility method does just that. The second parameter will give
+the type of shader to create. Currently there is no mechanism to match the shader code to the shader type. Extracting
+a shader class from this is probably the way to go. Later…</p>
+
+        
+          <div class='highlight'><pre>	<span class="hljs-attribute">compileShader</span>: <span class="hljs-function"><span class="hljs-params">( shaderCode, shaderType )</span> -&gt;</span>
+		shader = <span class="hljs-property">@_gl</span>.createShader shaderType
+
+		<span class="hljs-property">@_gl</span>.shaderSource shader, shaderCode
+		<span class="hljs-property">@_gl</span>.compileShader shader</pre></div>
+        
+      
+        
+        <p>After compilation we can check the compile status parameter of the shader to make sure everything went all right.
+Otherwise we throw an exception as there is currently no real point in continuing execution if a shader compilation
+fails.</p>
+
+        
+          <div class='highlight'><pre>		<span class="hljs-keyword">unless</span> <span class="hljs-property">@_gl</span>.getShaderParameter shader, <span class="hljs-property">@_gl</span>.COMPILE_STATUS
+			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> Error <span class="hljs-property">@_gl</span>.getShaderInfoLog
+
+		<span class="hljs-keyword">return</span> shader</pre></div>
+        
+      
+        
+        <h4 id="-a-name-initshaders-a-initshaders"><a name="initShaders"></a>initShaders</h4>
+<p>This method takes care of loading and compiling the fragment and vertex shaders.</p>
+
+        
+          <div class='highlight'><pre>	<span class="hljs-attribute">initShaders</span>: <span class="hljs-function"><span class="hljs-params">( fragmentShaderElementId, vertexShaderElementId )</span> -&gt;</span>
+		<span class="hljs-property">@_fragmentShader</span> = <span class="hljs-property">@compileShader</span> ( <span class="hljs-property">@fetchShaderFromElement</span> fragmentShaderElementId ), <span class="hljs-property">@_gl</span>.FRAGMENT_SHADER
+		<span class="hljs-property">@_vertexShader</span> = <span class="hljs-property">@compileShader</span> ( <span class="hljs-property">@fetchShaderFromElement</span> vertexShaderElementId ), <span class="hljs-property">@_gl</span>.VERTEX_SHADER</pre></div>
+        
+      
+        
+        <h4 id="-a-name-createshaderprogram-a-createshaderprogram"><a name="createShaderProgram"></a>createShaderProgram</h4>
+<p>Here we combine the fragment and vertex shader to a shader program. This is done by first creating the shader program
+itself and attaching the shaders to it.</p>
+
+        
+          <div class='highlight'><pre>	<span class="hljs-attribute">createShaderProgram</span>: <span class="hljs-function"><span class="hljs-params">( fragmentShaderSource, vertexShaderSource )</span> -&gt;</span>
+		<span class="hljs-property">@_shaderProgram</span> = <span class="hljs-property">@_gl</span>.createProgram()
+		<span class="hljs-property">@_gl</span>.attachShader <span class="hljs-property">@_shaderProgram</span>, <span class="hljs-property">@compileShader</span> fragmentShaderSource, <span class="hljs-property">@_gl</span>.FRAGMENT_SHADER
+		<span class="hljs-property">@_gl</span>.attachShader <span class="hljs-property">@_shaderProgram</span>, <span class="hljs-property">@compileShader</span> vertexShaderSource, <span class="hljs-property">@_gl</span>.VERTEX_SHADER</pre></div>
+        
+      
+        
+        <p>Then we link the shader program. If anything goes wrong while linking we throw an exception.</p>
+
+        
+          <div class='highlight'><pre>		<span class="hljs-property">@_gl</span>.linkProgram <span class="hljs-property">@_shaderProgram</span>
+		<span class="hljs-keyword">unless</span> <span class="hljs-property">@_gl</span>.getProgramParameter <span class="hljs-property">@_shaderProgram</span>, <span class="hljs-property">@_gl</span>.LINK_STATUS
+			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> Error <span class="hljs-string">'Could not initialize shaders.'</span></pre></div>
+        
+      
+        
+        <p>Instruct the GL context to use the shader program.</p>
+
+        
+          <div class='highlight'><pre>		<span class="hljs-property">@_gl</span>.useProgram <span class="hljs-property">@_shaderProgram</span></pre></div>
+        
+      
+        
+        <p>Store references to the variables in the shaders that should be available for us to manipulate later.</p>
+
+        
+          <div class='highlight'><pre>		<span class="hljs-property">@_shaderProgram</span>.vertexPositionAttribute = <span class="hljs-property">@_gl</span>.getAttribLocation <span class="hljs-property">@_shaderProgram</span>, <span class="hljs-string">'aVertexPosition'</span>
+		<span class="hljs-property">@_gl</span>.enableVertexAttribArray <span class="hljs-property">@_shaderProgram</span>.vertexPositionAttribute
+
+		<span class="hljs-property">@_shaderProgram</span>.vertexColorAttribute = <span class="hljs-property">@_gl</span>.getAttribLocation <span class="hljs-property">@_shaderProgram</span>, <span class="hljs-string">'aVertexColor'</span>
+		<span class="hljs-property">@_gl</span>.enableVertexAttribArray <span class="hljs-property">@_shaderProgram</span>.vertexColorAttribute
+
+		<span class="hljs-property">@_shaderProgram</span>.pMatrixUniform = <span class="hljs-property">@_gl</span>.getUniformLocation <span class="hljs-property">@_shaderProgram</span>, <span class="hljs-string">'uPMatrix'</span>
+		<span class="hljs-property">@_shaderProgram</span>.mvMatrixUniform = <span class="hljs-property">@_gl</span>.getUniformLocation <span class="hljs-property">@_shaderProgram</span>, <span class="hljs-string">'uMVMatrix'</span></pre></div>
+        
+      
+        
+        <h4 id="-a-name-setmatrixuniforms-a-setmatrixuniforms"><a name="setMatrixUniforms"></a>setMatrixUniforms</h4>
+<p>Utility to set the matrix uniforms.
+<em>NOTE:</em> Not sure that we need to set the projection matrix every time that we update the view matrix.</p>
+
+        
+          <div class='highlight'><pre>	<span class="hljs-attribute">setMatrixUniforms</span>: <span class="hljs-function"><span class="hljs-params">( mvMatrix, pMatrix )</span> -&gt;</span>
+		<span class="hljs-property">@_gl</span>.uniformMatrix4fv <span class="hljs-property">@_shaderProgram</span>.pMatrixUniform, <span class="hljs-literal">false</span>, pMatrix
+		<span class="hljs-property">@_gl</span>.uniformMatrix4fv <span class="hljs-property">@_shaderProgram</span>.mvMatrixUniform, <span class="hljs-literal">false</span>, mvMatrix</pre></div>
+        
+      
+        
+        <h4 id="-a-name-createmesh-a-createmesh"><a name="createMesh"></a>createMesh</h4>
+<p>Utility to create a mesh.</p>
+
+        
+          <div class='highlight'><pre>	<span class="hljs-attribute">createMesh</span>: <span class="hljs-function"><span class="hljs-params">( vertices, vertexSize, numVertices, colors, colorSize, numColors, position )</span> -&gt;</span>
+		vertexBuffer = <span class="hljs-property">@_gl</span>.createBuffer()
+		<span class="hljs-property">@_gl</span>.bindBuffer <span class="hljs-property">@_gl</span>.ARRAY_BUFFER, vertexBuffer
+		<span class="hljs-property">@_gl</span>.bufferData <span class="hljs-property">@_gl</span>.ARRAY_BUFFER, ( <span class="hljs-keyword">new</span> Float32Array vertices ), <span class="hljs-property">@_gl</span>.STATIC_DRAW
+
+		colorBuffer = <span class="hljs-property">@_gl</span>.createBuffer()
+		<span class="hljs-property">@_gl</span>.bindBuffer <span class="hljs-property">@_gl</span>.ARRAY_BUFFER, colorBuffer
+		<span class="hljs-property">@_gl</span>.bufferData <span class="hljs-property">@_gl</span>.ARRAY_BUFFER, ( <span class="hljs-keyword">new</span> Float32Array colors ), <span class="hljs-property">@_gl</span>.STATIC_DRAW
+
+		<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Mesh vertexBuffer, vertexSize, numVertices, colorBuffer, colorSize, numColors, position</pre></div>
+        
+      
+        
+        <h4 id="-a-name-createmeshfromobj-a-createmeshfromobj"><a name="createMeshFromObj"></a>createMeshFromObj</h4>
+<p>Creates a mesh from a WaveFront .obj file.</p>
+
+        
+          <div class='highlight'><pre>	<span class="hljs-attribute">createMeshFromObj</span>: <span class="hljs-function"><span class="hljs-params">( objData, position )</span> -&gt;</span>
+		lines = objData.split <span class="hljs-string">'\n'</span>
+
+		<span class="hljs-keyword">for</span> line <span class="hljs-keyword">in</span> lines
+			tokens = line.split <span class="hljs-regexp">/\s+/</span></pre></div>
+        
+      
+        
+        <h4 id="-a-name-drawscene-a-drawscene"><a name="drawScene"></a>drawScene</h4>
+<p>Finally it’s time for rendering the scene.</p>
+
+        
+          <div class='highlight'><pre>	<span class="hljs-attribute">drawScene</span>: <span class="hljs-function"><span class="hljs-params">( meshes )</span> -&gt;</span></pre></div>
+        
+      
+        
+        <p>Set up the viewport and clear it.</p>
+
+        
+          <div class='highlight'><pre>		<span class="hljs-property">@_gl</span>.viewport <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-property">@_gl</span>.viewportWidth, <span class="hljs-property">@_gl</span>.viewportHeight
+		<span class="hljs-property">@_gl</span>.clear <span class="hljs-property">@_gl</span>.COLOR_BUFFER_BIT | <span class="hljs-property">@_gl</span>.DEPTH_BUFFER_BIT</pre></div>
+        
+      
+        
+        <p>Initialize the perspective matrix.</p>
+
+        
+          <div class='highlight'><pre>		<span class="hljs-property">@_pMatrix</span> = mat4.create()
+		mat4.perspective <span class="hljs-property">@_pMatrix</span>, <span class="hljs-number">45</span>, <span class="hljs-property">@_gl</span>.viewportWidth / <span class="hljs-property">@_gl</span>.viewportHeight, <span class="hljs-number">0.1</span>, <span class="hljs-number">100.0</span>, <span class="hljs-property">@_pMatrix</span></pre></div>
+        
+      
+        
+        <p>Initialize the view matrix.</p>
+
+        
+          <div class='highlight'><pre>		<span class="hljs-property">@_mvMatrix</span> = mat4.create()
+
+		<span class="hljs-keyword">for</span> mesh <span class="hljs-keyword">in</span> meshes
+			mat4.translate <span class="hljs-property">@_mvMatrix</span>, mat4.create(), mesh.position
+			<span class="hljs-property">@_gl</span>.bindBuffer <span class="hljs-property">@_gl</span>.ARRAY_BUFFER, mesh.vertexBuffer
+			<span class="hljs-property">@_gl</span>.vertexAttribPointer <span class="hljs-property">@_shaderProgram</span>.vertexPositionAttribute, mesh.vertexSize, <span class="hljs-property">@_gl</span>.FLOAT, <span class="hljs-literal">false</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>
+			<span class="hljs-property">@_gl</span>.bindBuffer <span class="hljs-property">@_gl</span>.ARRAY_BUFFER, mesh.colorBuffer
+			<span class="hljs-property">@_gl</span>.vertexAttribPointer <span class="hljs-property">@_shaderProgram</span>.vertexColorAttribute, mesh.colorSize, <span class="hljs-property">@_gl</span>.FLOAT, <span class="hljs-literal">false</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>
+			<span class="hljs-property">@setMatrixUniforms</span> <span class="hljs-property">@_mvMatrix</span>, <span class="hljs-property">@_pMatrix</span>
+			<span class="hljs-property">@_gl</span>.drawArrays <span class="hljs-property">@_gl</span>.TRIANGLES, <span class="hljs-number">0</span>, mesh.numVertices</pre></div>
+        
+      
+        
+        <p>Here is a quick and dirty function to test out the class above by setting up the GL object and render a single frame
+of the scene.</p>
+
+        
+      
+      <div class="fleur">h</div>
+    </div>
+  </div>
+</body>
+</html>

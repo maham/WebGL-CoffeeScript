@@ -164,6 +164,16 @@ Utility to create a mesh.
 
 			return new Mesh vertexBuffer, vertexSize, numVertices, colorBuffer, colorSize, numColors, position
 
+#### <a name="createMeshFromObj"></a>createMeshFromObj
+Creates a mesh from a WaveFront .obj file.
+
+		createMeshFromObj: ( objData, position ) ->
+			lines = objData.split '\n'
+
+			for line in lines
+				tokens = line.split /\s+/
+
+
 
 #### <a name="drawScene"></a>drawScene
 Finally it's time for rendering the scene.
