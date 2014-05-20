@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>app.litcoffee</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="app.html">
+                app.litcoffee
+              </a>
+            
+              
+              <a class="source" href="gl.html">
+                gl.litcoffee
+              </a>
+            
+              
+              <a class="source" href="mesh.html">
+                mesh.litcoffee
+              </a>
+            
+              
+              <a class="source" href="objloader.html">
+                objloader.litcoffee
+              </a>
+            
+              
+              <a class="source" href="user.html">
+                user.litcoffee
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>app.litcoffee</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h2 id="app">App</h2>
+<h3 id="dependencies">Dependencies</h3>
+<p>Include <a href="gl.html">GL</a> to handle all WebGL related tasks.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>GL = <span class="hljs-built_in">require</span> <span class="hljs-string">'app/gl'</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <h3 id="start-the-application">Start the application</h3>
+<p>The app must wait for everything to be properly loaded before it can start. This is done with a simple event listener
+waiting for the <code>OnLoaded</code> event. There is a lot of JS-frameworks that could help with this but at the moment
+this method will be sufficient.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-built_in">document</span>.addEventListener <span class="hljs-string">"OnLoaded"</span>,<span class="hljs-function"> -&gt;</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>The shaders are loaded asynchronously as text. Pre-compiled shaders don’t exist in WebGL yet and it’s probably not high
+on the list as it would be a security concern as far as I understand it. Create a couple of variables store the shader
+code in until we are ready init GL.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	fragmentShaderSource	=
+	vertexShaderSource		= <span class="hljs-literal">undefined</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>Start asunchronous loading of the shaders. Store the shader code when the ajax request is done.
+As there is two shaders that are both loaded async the app must wait until both are loaded before continuing execution
+of the app.
+The .c suffix is choosen just to trick Sublime Text into giving some syntax highlighting.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-built_in">console</span>.log <span class="hljs-string">'Starting to load shaders.'</span>
+	<span class="hljs-keyword">new</span> microAjax <span class="hljs-string">'./fShader.c'</span>, <span class="hljs-function"><span class="hljs-params">( resource )</span> -&gt;</span>
+		<span class="hljs-built_in">console</span>.log <span class="hljs-string">'Fragment shader loaded.'</span>
+		fragmentShaderSource = resource
+
+	<span class="hljs-keyword">new</span> microAjax <span class="hljs-string">'./vShader.c'</span>, <span class="hljs-function"><span class="hljs-params">( resource )</span> -&gt;</span>
+		<span class="hljs-built_in">console</span>.log <span class="hljs-string">'Vertex shader loaded.'</span>
+		vertexShaderSource = resource</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>waitForShaders do just that. It waits for the shaders to load in one second loops and when both <code>fragmentShaderSource</code>
+and <code>vertexShaderSource</code> are populated it will call <code>startGL</code> passing in the code for both shaders.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-function"><span class="hljs-title">waitForShaders</span> = -&gt;</span>
+		shaderLoadingTimer = setInterval<span class="hljs-function"> -&gt;</span>
+			<span class="hljs-keyword">if</span> fragmentShaderSource? <span class="hljs-keyword">and</span> vertexShaderSource?
+				startGL <span class="hljs-string">'lesson01-canvas'</span>, fragmentShaderSource, vertexShaderSource
+			<span class="hljs-keyword">else</span>
+				waitForShaders()
+		, <span class="hljs-number">1000</span>
+
+	waitForShaders()</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>To start the GL stuff we need an HTML canvas element and both a fragment shader and a vertex shader is needed. The
+shaders are passed as strings containing the raw GLSL code.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-function"><span class="hljs-title">startGL</span> = <span class="hljs-params">( canvasElementId, fragmentShaderSource, vertexShaderSource )</span> -&gt;</span>
+		gl = <span class="hljs-keyword">new</span> GL canvasElementId</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>After GL is initialized the shader program have to be compiled and linked.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		gl.createShaderProgram fragmentShaderSource, vertexShaderSource</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>A 3D program without something drawn on screen would be pretty dull so it’s spiced up with a couple of meshes. Some
+kind of mesh loader should probably be next on the list of things to do. Not sure what file format to use but .obj
+or maybe shapefiles could work.</p>
+<p>First create a triangle…</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		triangle = gl.createMesh [
+				 <span class="hljs-number">0.0</span>,  <span class="hljs-number">1.0</span>,  <span class="hljs-number">0.0</span>
+				-<span class="hljs-number">1.0</span>, -<span class="hljs-number">1.0</span>,  <span class="hljs-number">0.0</span>
+				 <span class="hljs-number">1.0</span>, -<span class="hljs-number">1.0</span>,  <span class="hljs-number">0.0</span>
+			], <span class="hljs-number">3</span>, <span class="hljs-number">3</span>, [
+				<span class="hljs-number">1.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>,
+				<span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>,
+				<span class="hljs-number">0.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>
+			], <span class="hljs-number">4</span>, <span class="hljs-number">3</span>, [-<span class="hljs-number">1.5</span>,<span class="hljs-number">0.0</span>,-<span class="hljs-number">7.0</span>]</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>…and then a square. Both in pleasing primal colors.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		square = gl.createMesh [
+				 <span class="hljs-number">1.0</span>,  <span class="hljs-number">1.0</span>,	 <span class="hljs-number">0.0</span>
+				-<span class="hljs-number">1.0</span>,  <span class="hljs-number">1.0</span>,  <span class="hljs-number">0.0</span>
+				 <span class="hljs-number">1.0</span>, -<span class="hljs-number">1.0</span>,  <span class="hljs-number">0.0</span>
+				-<span class="hljs-number">1.0</span>,  <span class="hljs-number">1.0</span>,  <span class="hljs-number">0.0</span>
+				-<span class="hljs-number">1.0</span>, -<span class="hljs-number">1.0</span>,  <span class="hljs-number">0.0</span>
+				 <span class="hljs-number">1.0</span>, -<span class="hljs-number">1.0</span>,  <span class="hljs-number">0.0</span>
+			], <span class="hljs-number">3</span>, <span class="hljs-number">6</span>, [
+				<span class="hljs-number">1.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>,
+				<span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>,
+				<span class="hljs-number">0.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>
+				<span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>,
+				<span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>,
+				<span class="hljs-number">0.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span>
+			], <span class="hljs-number">4</span>, <span class="hljs-number">6</span>, [<span class="hljs-number">1.5</span>, <span class="hljs-number">0.0</span>,-<span class="hljs-number">7.0</span>]</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>There is no animation or anything so a single drawn frame is all that’s needed to show the rewards of this hard labor.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		gl.drawScene [triangle, square]
+, <span class="hljs-literal">false</span></pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
