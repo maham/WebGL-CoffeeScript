@@ -1,83 +1,79 @@
-A Triangle and a Square
-=======================
+GL
+==
 
-What is this?
--------------
+GL is the central object handling WebGL calls. Currently it's taking care of every function that needs the gl object.
 
-This is yet another attempt to get started with WebGL programming using CoffeeScript. The choice of using
-literate CoffeeScript is because I have been curious about how effective it can actually be to use prose
-while formulating the software. After all the larger part of the time coding is usually taken by hammering
-out the method rather then actually coding it.
-
-The program
------------
-
-This is an OOP approach to the Triangle and Square tutorial. This way less stuff will have to be moved around between
-the methods and hopefully it will also help in the task of putting stuff where it belongs.
-
-### Dependencies
+Dependencies
+------------
+To wrap the data needed for drawing meshes we import the extremely simple Mesh class. For parsing .obj file data into
+structures convenient for creating meshes we use the ObjParser which can parse simple .obj files.
 
 	Mesh = require 'app/mesh'
+	ObjParser = require 'app/objparser'
 
-
-### <a name="the-class"></a>GL
+GL
+--
 First we need the class itself. I will call it GL at the moment and see if that sticks.
 
 	module.exports = class GL
 
-#### <a name="constructor"></a>Constructor
-The constructor need the element id of the canvas tag where we should render our OpenGL
-scene.
+constructor
+-----------
+
+The constructor need the element id of the canvas element where we will initialize the WebGL context. The view matrix
+the projection matrix and the matrix stack is also initialized here.
 
 		constructor: ( canvasElementId ) ->
+			@_pMatrix = mat4.create()
+			@_mvMatrix = mat4.create()
+			@_mvMatrixStack = []
+			@_cubeRotation = 0.0
 
-Get the element and keep a reference to it as a member. It will come in handy from time to time.
+Fetch the element and then get the `webgl` context from it. If this fails try `experimental-webgl`. This might throw an
+exception and we have to catch that. It might be better to just let the exception fall through but this way a better
+error message can be shown. I will still throw the exception but now I can couple it with a console line to make sure I
+know why the program halted.
 
-			@_canvasElement = document.getElementById canvasElementId
-
-Get the context of the canvas using the `experimental-webgl` argument. There might be something like `webgl` that could
-work but this works and will have to do for now. This might throw an exception and we have to catch that. It might be
-better to just let the exception fall through but this way a better error message can be shown. I will still throw the
-exception but now I can couple it with a console line to make sure I know why the program halted.
+			canvasElement = document.getElementById canvasElementId
 
 			try
-				@_gl = @_canvasElement.getContext 'experimental-webgl'
+				@_gl = canvasElement.getContext 'webgl' || canvasElement.getContext 'experimental-webgl'
 			catch error
 				console.log 'Failed to initialize WebGL using the element ' + canvas + '. Error:\n' + error
 				throw error
 
-I stick the width and height of the canvas element to the context object.
+Tack the physical dimensions of the element onto the gl context. We need them to be able to specify the viewport later.
 
-			@_gl.viewportWidth = @_canvasElement.width
-			@_gl.viewportHeight = @_canvasElement.height
+			@_gl.viewportWidth = canvasElement.width
+			@_gl.viewportHeight = canvasElement.height
 
-Clear the buffer and enable depth testing
+Clear the buffer and enable depth testing.
 
 			@_gl.clearColor 0.0, 0.0, 0.0, 1.0
 			@_gl.enable @_gl.DEPTH_TEST
 
 
-#### <a name="fetchShaderFromElement"></a>fetchShaderFromElement
-The shaders are currently located in their own `<script>` tags in the HTML. To facilitate the swap to external files or
-any other method of retreiving these I create a method for fetching the shaders. This can later be replaced by any
-other means of loading the shader code.
+fetchShaderFromElement
+----------------------
+
+Shaders can be located inside a `<script>` tag in the HTML. This method parses an element specified by its id.
 
 		fetchShaderFromElement: ( shaderElementId ) ->
-			shaderScript = document.getElementById shaderElementId
+			shaderElement = document.getElementById shaderElementId
 
-If the given element doesn't exist we stop the execution straight away. Same thing if it's not a shader element. (It
-should be a script tag with the proper type.)
+If the given element doesn't exist we stop the execution straight away. Same thing if it's not a shader element. It
+should be a script tag with the type attribute set to either `x-shader/x-fragment` or `x-shader/x-vertex`.
 
-			throw new Error 'No shader with id: ' + shaderElementId unless shaderScript
-			throw new Error 'Not a shader element: ' + shaderElement unless shaderScript.type == 'x-shader/x-fragment' or shaderScript.type == 'x-shader/x-vertex'
+			throw new Error 'No shader with id: ' + shaderElementId unless shaderElement
+			throw new Error 'Not a shader element: ' + shaderElement unless shaderElement.type == 'x-shader/x-fragment' or shaderScript.type == 'x-shader/x-vertex'
 
 The shader code is just text so we can just traverse through the element and glue together all nodes with nodeType 3
 (text nodes) to a combined string with the shader code in it.
-_NOTE:_ This might not be the best way to do this. I think I can actually use either the
-textContent or the innerHTML properties. I'll try that later.
+*NOTE:* This might not be the best way to do this. I think I can actually use the innerHTML property. I'll try that
+later.
 
 			shaderCode = ""
-			currentScriptNode = shaderScript.firstChild
+			currentScriptNode = shaderElement.firstChild
 
 			while currentScriptNode
 				shaderCode += currentScriptNode.textContent if currentScriptNode.nodeType == 3
@@ -85,10 +81,12 @@ textContent or the innerHTML properties. I'll try that later.
 
 			return shaderCode;
 
-#### <a name="compileShader"></a>compileShader
-To use the shaders they will have to be compiled. This utility method does just that. The second parameter will give
-the type of shader to create. Currently there is no mechanism to match the shader code to the shader type. Extracting
-a shader class from this is probably the way to go. Later...
+compileShader
+-------------
+
+To use the shaders they will have to be compiled. The first parameter is a string containing the GLSL code and the
+second parameter will give the type of shader to create. Currently there is no mechanism to match the shader code to
+the shader type. Extracting a shader class from this is probably the way to go. Later...
 
 		compileShader: ( shaderCode, shaderType ) ->
 			shader = @_gl.createShader shaderType
@@ -105,7 +103,9 @@ fails.
 
 			return shader
 
-#### <a name="initShaders"></a>initShaders
+initShaders
+-----------
+
 This method takes care of loading and compiling the fragment and vertex shaders.
 
 		initShaders: ( fragmentShaderElementId, vertexShaderElementId ) ->
@@ -136,9 +136,6 @@ Store references to the variables in the shaders that should be available for us
 			@_shaderProgram.vertexPositionAttribute = @_gl.getAttribLocation @_shaderProgram, 'aVertexPosition'
 			@_gl.enableVertexAttribArray @_shaderProgram.vertexPositionAttribute
 
-			@_shaderProgram.vertexColorAttribute = @_gl.getAttribLocation @_shaderProgram, 'aVertexColor'
-			@_gl.enableVertexAttribArray @_shaderProgram.vertexColorAttribute
-
 			@_shaderProgram.pMatrixUniform = @_gl.getUniformLocation @_shaderProgram, 'uPMatrix'
 			@_shaderProgram.mvMatrixUniform = @_gl.getUniformLocation @_shaderProgram, 'uMVMatrix'
 
@@ -146,34 +143,46 @@ Store references to the variables in the shaders that should be available for us
 Utility to set the matrix uniforms.
 _NOTE:_ Not sure that we need to set the projection matrix every time that we update the view matrix.
 
-		setMatrixUniforms: ( mvMatrix, pMatrix ) ->
-			@_gl.uniformMatrix4fv @_shaderProgram.pMatrixUniform, false, pMatrix
-			@_gl.uniformMatrix4fv @_shaderProgram.mvMatrixUniform, false, mvMatrix
+		setMatrixUniforms: ->
+			@_gl.uniformMatrix4fv @_shaderProgram.pMatrixUniform, false, @_pMatrix
+			@_gl.uniformMatrix4fv @_shaderProgram.mvMatrixUniform, false, @_mvMatrix
 
 #### <a name="createMesh"></a>createMesh
 Utility to create a mesh.
 
-		createMesh: ( vertices, vertexSize, numVertices, colors, colorSize, numColors, position ) ->
+		createMesh: ( vertices, vertexSize, numVertices, indices, numIndices, position ) ->
 			vertexBuffer = @_gl.createBuffer()
 			@_gl.bindBuffer @_gl.ARRAY_BUFFER, vertexBuffer
 			@_gl.bufferData @_gl.ARRAY_BUFFER, ( new Float32Array vertices ), @_gl.STATIC_DRAW
 
-			colorBuffer = @_gl.createBuffer()
-			@_gl.bindBuffer @_gl.ARRAY_BUFFER, colorBuffer
-			@_gl.bufferData @_gl.ARRAY_BUFFER, ( new Float32Array colors ), @_gl.STATIC_DRAW
+			indexBuffer = @_gl.createBuffer()
+			@_gl.bindBuffer @_gl.ELEMENT_ARRAY_BUFFER, indexBuffer
+			@_gl.bufferData @_gl.ELEMENT_ARRAY_BUFFER, ( new Uint16Array indices ), @_gl.STATIC_DRAW
 
-			return new Mesh vertexBuffer, vertexSize, numVertices, colorBuffer, colorSize, numColors, position
+			return new Mesh vertexBuffer, vertexSize, numVertices, indexBuffer, numIndices, position
 
 #### <a name="createMeshFromObj"></a>createMeshFromObj
 Creates a mesh from a WaveFront .obj file.
 
 		createMeshFromObj: ( objData, position ) ->
-			lines = objData.split '\n'
+			parser = new ObjParser
+			parser.parse objData
+			@createMesh parser.vertices, 3, parser.vertices.length / 3, parser.faces, parser.faces.length, [0, 0, -7]
 
-			for line in lines
-				tokens = line.split /\s+/
+#### <a name="pushMatrix"></a>pushMatrix
+I'm using the matrix stack from the tutorial here. Another method might be used later.
 
+		pushMatrix: ->
+			@_mvMatrixStack.push mat4.clone @_mvMatrix
 
+		popMatrix: ->
+			throw Error 'Invalid popMatrix' if @_mvMatrixStack.length < 1
+			@_mvMatrix = @_mvMatrixStack.pop()
+
+A conversion of degrees to radians is needed
+
+		deg2Rad: ( degrees ) ->
+			degrees * Math.PI / 180
 
 #### <a name="drawScene"></a>drawScene
 Finally it's time for rendering the scene.
@@ -187,22 +196,29 @@ Set up the viewport and clear it.
 
 Initialize the perspective matrix.
 
-			@_pMatrix = mat4.create()
 			mat4.perspective @_pMatrix, 45, @_gl.viewportWidth / @_gl.viewportHeight, 0.1, 100.0, @_pMatrix
 
 Initialize the view matrix.
 
-			@_mvMatrix = mat4.create()
+			mat4.identity @_mvMatrix
 
 			for mesh in meshes
 				mat4.translate @_mvMatrix, mat4.create(), mesh.position
+				@pushMatrix()
+				mat4.rotate @_mvMatrix, @_mvMatrix, ( @deg2Rad @_cubeRotation ), [-1, 1, 1]
+				debugString = @_cubeRotation.toFixed( 2 ).toString()
+				( document.getElementById 'cubeRot' ).value = mat4.str @_mvMatrix
 				@_gl.bindBuffer @_gl.ARRAY_BUFFER, mesh.vertexBuffer
 				@_gl.vertexAttribPointer @_shaderProgram.vertexPositionAttribute, mesh.vertexSize, @_gl.FLOAT, false, 0, 0
-				@_gl.bindBuffer @_gl.ARRAY_BUFFER, mesh.colorBuffer
-				@_gl.vertexAttribPointer @_shaderProgram.vertexColorAttribute, mesh.colorSize, @_gl.FLOAT, false, 0, 0
-				@setMatrixUniforms @_mvMatrix, @_pMatrix
-				@_gl.drawArrays @_gl.TRIANGLES, 0, mesh.numVertices
 
+				@_gl.bindBuffer @_gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer
 
-Here is a quick and dirty function to test out the class above by setting up the GL object and render a single frame
-of the scene.
+				@setMatrixUniforms()
+				@_gl.drawElements @_gl.TRIANGLE_FAN, mesh.numIndices, @_gl.UNSIGNED_SHORT, 0
+				@popMatrix()
+
+Lets spice tings up with some animation
+
+		tick: ->
+			@_cubeRotation += 1.5
+	

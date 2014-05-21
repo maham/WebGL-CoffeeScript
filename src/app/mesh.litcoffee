@@ -1,6 +1,5 @@
 Mesh
 ====
 
-
 	module.exports = class Mesh
-		constructor: ( @vertexBuffer, @vertexSize, @numVertices, @colorBuffer, @colorSize, @numColors, @position ) ->
+		constructor: ( @vertexBuffer, @vertexSize, @numVertices, @indexBuffer, @numIndices, @position ) ->

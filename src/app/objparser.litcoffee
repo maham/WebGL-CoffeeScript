@@ -1,11 +1,11 @@
-ObjLoader
+ObjParser
 =========
 
-## ObjLoader
-The ObjLoader takes a string and parses it as a WaveFront .obj-file. It will create a list of vertices, a list of
+## ObjParser
+The ObjParser takes a string and parses it as a WaveFront .obj-file. It will create a list of vertices, a list of
 normals, a list of texels and a list of faces. Those can then be used to create a mesh for WebGL.
 
-	module.exports = class ObjLoader
+	module.exports = class ObjParser
 
 ### constructor
 The constructor will start the parsing immediately. Splitting this into constructor and parser might be better if the
@@ -27,49 +27,58 @@ tokens as parameters.
 
 		parse: ( objData ) ->
 			for line in objData.split '\n'
-				continue if ( line.charAt 0 ) == '#'
+				continue if ( line.charAt 0 ) == '#' or line.length < 1
 				tokens = line.trim().split /\s+/
-				@[tokens[0]].apply @, tokens[1..]
+				@[tokens[0]].apply @, tokens[1..] if @[tokens[0]]
+			@
 
 ### v
 A vertex is created from three components, `x, y, z`. The .obj specification allows for a fourth `w` component which is
 ignored here. All components are parsed as floats.
 
 		v: ( x, y, z ) ->
-			@vertices.push [
+			@vertices.push.apply @vertices,
+			[
 				parseFloat x
 				parseFloat y
 				parseFloat z
 			]
+			return
 
 ### vn
 A normal is created from three components, `i, j, k`. All components are parsed as floats.
 
 		vn: ( i, j, k ) ->
-			@normals.push [
+			@normals.push.apply @normals,
+			[
 				parseFloat i
 				parseFloat j
 				parseFloat k
 			]
+			return
 
 ### vt
 A texel, texture coordinate, is created from two components. The .obj specification allows for a third `w` component
 which is ignored here. All components are parsed as floats.
 
 		vt: ( u, v ) ->
-			@texels.push [
+			@texels.push.apply @texels,
+			[
 				parseFloat u
 				parseFloat v
 			]
+			return
 
 ### f
 Faces are groups of indices corresponding to the vertices.  
-**IMPORTANT** Support for v/vt/vn must be added. I have to look at how index lists for texels and normals looks like in
-WebGL to do this properly but I think I remember that usually the vertex is expanded with the extra data. Something
-like [x, y, z, u, v] for a textured vertex.  
+**WARNING** To simplify things only the vertex index on `f` rows is regarded. If the index have normal and texel intermixed
+those will be ignored.
 **WARNING** There is no support for negative indices at the moment.
 
 		f: ( indices... ) ->
 			for currentIndex in [0...indices.length]
-				indices[currentIndex] = parseFloat indices[currentIndex]
-			@faces.push indices
+				components = indices[currentIndex].split '/'
+				indices[currentIndex] = components[0]
+				indices[currentIndex] = parseInt ( indices[currentIndex] - 1 )
+			@faces.push.apply @faces, indices
+			return

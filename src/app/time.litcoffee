@@ -1,4 +1,4 @@
-define ->
+
 	for vendor in ['ms', 'moz', 'webkit', 'o']
 			break if requestAnimationFrame
 			requestAnimationFrame = window["#{vendor}RequestAnimationFrame"]
@@ -11,10 +11,9 @@ define ->
 			setTimeout ( -> callback Date.now() ), targetTime - currentTime
 	
 	cancelAnimationFrame or= (id) -> clearTimeout id
+
+	exports.requestAnimationFrame = (callback) ->
+		requestAnimationFrame.apply window, [callback]
 	
-	time =
-		requestAnimationFrame: (callback) ->
-			requestAnimationFrame.apply window, [callback]
-		
-		cancelAnimationFrame: (id) ->
-			cancelAnimationFrame.apply window, [id]
+	exports.cancelAnimationFrame = (id) ->
+		cancelAnimationFrame.apply window, [id]
