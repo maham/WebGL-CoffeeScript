@@ -8,8 +8,9 @@ Dependencies
 To wrap the data needed for drawing meshes we import the extremely simple Mesh class. For parsing .obj file data into
 structures convenient for creating meshes we use the ObjParser which can parse simple .obj files.
 
-	Mesh = require 'app/mesh'
-	ObjParser = require 'app/objparser'
+	Mesh		= require 'app/mesh'
+	ObjParser 	= require 'app/objparser'
+	Camera		= require 'app/camera'
 
 GL
 --
@@ -21,13 +22,14 @@ constructor
 -----------
 
 The constructor need the element id of the canvas element where we will initialize the WebGL context. The view matrix
-the projection matrix and the matrix stack is also initialized here.
+the projection matrix and the matrix stack are also initialized here.
 
 		constructor: ( canvasElementId ) ->
-			@_pMatrix = mat4.create()
-			@_mvMatrix = mat4.create()
-			@_mvMatrixStack = []
-			@_cubeRotation = 0.0
+			@_pMatrix		= mat4.create()
+			@_mvMatrix		= mat4.create()
+			@_mvMatrixStack	= []
+			@_cubeRotation	= 0.0
+			@_camera		= new Camera [0, 0, -10], [0, 0, 0]
 
 Fetch the element and then get the `webgl` context from it. If this fails try `experimental-webgl`. This might throw an
 exception and we have to catch that. It might be better to just let the exception fall through but this way a better
@@ -46,11 +48,14 @@ Tack the physical dimensions of the element onto the gl context. We need them to
 
 			@_gl.viewportWidth = canvasElement.width
 			@_gl.viewportHeight = canvasElement.height
+			mat4.perspective @_pMatrix, 45, canvasElement.width / canvasElement.height, 0.1, 100.0, @_pMatrix
+			@_gl.viewport 0, 0, canvasElement.width, canvasElement.height
 
-Clear the buffer and enable depth testing.
+Clear the buffer, enable depth testing and enable backface culling.
 
 			@_gl.clearColor 0.0, 0.0, 0.0, 1.0
 			@_gl.enable @_gl.DEPTH_TEST
+			@_gl.enable @_gl.CULL_FACE
 
 
 fetchShaderFromElement
@@ -112,110 +117,154 @@ This method takes care of loading and compiling the fragment and vertex shaders.
 			@_fragmentShader = @compileShader ( @fetchShaderFromElement fragmentShaderElementId ), @_gl.FRAGMENT_SHADER
 			@_vertexShader = @compileShader ( @fetchShaderFromElement vertexShaderElementId ), @_gl.VERTEX_SHADER
 
-#### <a name="createShaderProgram"></a>createShaderProgram
-Here we combine the fragment and vertex shader to a shader program. This is done by first creating the shader program
-itself and attaching the shaders to it.
+createShaderProgram
+-------------------
+
+Here we combine the fragment and vertex shader into a shader program. This is done by first creating the shader program
+itself, attaching the shaders to it and last linking the program. Failure to link will result in an exception.
 
 		createShaderProgram: ( fragmentShaderSource, vertexShaderSource ) ->
-			@_shaderProgram = @_gl.createProgram()
-			@_gl.attachShader @_shaderProgram, @compileShader fragmentShaderSource, @_gl.FRAGMENT_SHADER
-			@_gl.attachShader @_shaderProgram, @compileShader vertexShaderSource, @_gl.VERTEX_SHADER
+			shaderProgram = @_gl.createProgram()
+			@_gl.attachShader shaderProgram, @compileShader fragmentShaderSource, @_gl.FRAGMENT_SHADER
+			@_gl.attachShader shaderProgram, @compileShader vertexShaderSource, @_gl.VERTEX_SHADER
 
-Then we link the shader program. If anything goes wrong while linking we throw an exception.
-
-			@_gl.linkProgram @_shaderProgram
-			unless @_gl.getProgramParameter @_shaderProgram, @_gl.LINK_STATUS
+			@_gl.linkProgram shaderProgram
+			unless @_gl.getProgramParameter shaderProgram, @_gl.LINK_STATUS
 				throw new Error 'Could not initialize shaders.'
 
-Instruct the GL context to use the shader program.
+			return shaderProgram
 
+setShader
+---------
+
+Set the shader program to use for rendering and get references to the variables that's needed to interact with the
+shader. The references are stored in the shader program object.
+
+		setShader: ( @_shaderProgram ) ->
 			@_gl.useProgram @_shaderProgram
 
-Store references to the variables in the shaders that should be available for us to manipulate later.
-
 			@_shaderProgram.vertexPositionAttribute = @_gl.getAttribLocation @_shaderProgram, 'aVertexPosition'
+			throw Error 'Failed to get reference to "aVertexPosition" in shader program.' unless @_shaderProgram.vertexPositionAttribute?
 			@_gl.enableVertexAttribArray @_shaderProgram.vertexPositionAttribute
 
-			@_shaderProgram.pMatrixUniform = @_gl.getUniformLocation @_shaderProgram, 'uPMatrix'
+			#@_shaderProgram.pMatrixUniform = @_gl.getUniformLocation @_shaderProgram, 'uPMatrix'
+			#throw Error 'Failed to get reference to "uPMatrix" in shader program.' unless @_shaderProgram.pMatrixUniform?
+
 			@_shaderProgram.mvMatrixUniform = @_gl.getUniformLocation @_shaderProgram, 'uMVMatrix'
+			throw Error 'Failed to get reference to "uMVMatrix" in shader program.' unless @_shaderProgram.mvMatrixUniform?
 
-#### <a name="setMatrixUniforms"></a>setMatrixUniforms
-Utility to set the matrix uniforms.
-_NOTE:_ Not sure that we need to set the projection matrix every time that we update the view matrix.
+createMesh
+----------
 
-		setMatrixUniforms: ->
-			@_gl.uniformMatrix4fv @_shaderProgram.pMatrixUniform, false, @_pMatrix
-			@_gl.uniformMatrix4fv @_shaderProgram.mvMatrixUniform, false, @_mvMatrix
-
-#### <a name="createMesh"></a>createMesh
 Utility to create a mesh.
 
-		createMesh: ( vertices, vertexSize, numVertices, indices, numIndices, position ) ->
+		createMesh: ( settings ) ->
 			vertexBuffer = @_gl.createBuffer()
 			@_gl.bindBuffer @_gl.ARRAY_BUFFER, vertexBuffer
-			@_gl.bufferData @_gl.ARRAY_BUFFER, ( new Float32Array vertices ), @_gl.STATIC_DRAW
+			@_gl.bufferData @_gl.ARRAY_BUFFER, ( new Float32Array settings.vertices ), @_gl.STATIC_DRAW
 
 			indexBuffer = @_gl.createBuffer()
 			@_gl.bindBuffer @_gl.ELEMENT_ARRAY_BUFFER, indexBuffer
-			@_gl.bufferData @_gl.ELEMENT_ARRAY_BUFFER, ( new Uint16Array indices ), @_gl.STATIC_DRAW
+			@_gl.bufferData @_gl.ELEMENT_ARRAY_BUFFER, ( new Uint16Array settings.indices ), @_gl.STATIC_DRAW
 
-			return new Mesh vertexBuffer, vertexSize, numVertices, indexBuffer, numIndices, position
+			return new Mesh
+				vertexBuffer:	vertexBuffer
+				vertexSize:		settings.vertexSize
+				numVertices:	settings.vertices.length / settings.vertexSize
+				indexBuffer:	indexBuffer
+				numIndices:		settings.indices.length
+				position:		settings.position
 
-#### <a name="createMeshFromObj"></a>createMeshFromObj
+createMeshFromObj
+-----------------
+
 Creates a mesh from a WaveFront .obj file.
 
 		createMeshFromObj: ( objData, position ) ->
 			parser = new ObjParser
 			parser.parse objData
-			@createMesh parser.vertices, 3, parser.vertices.length / 3, parser.faces, parser.faces.length, [0, 0, -7]
+			@createMesh
+				vertices:		parser.out[0]
+				vertexSize:		3
+				indices:		parser.indices
+				numIndices:		parser.indices.length
+				position:		[0, 0, 0]
 
-#### <a name="pushMatrix"></a>pushMatrix
+setMvMatrix
+-----------------
+
+		setMvMatrix: ( modelMatrix, viewMatrix, projectionMatrix ) ->
+			mvMatrix = mat4.create()
+			mat4.multiply mvMatrix, modelMatrix, viewMatrix
+			mat4.multiply mvMatrix, mvMatrix, projectionMatrix
+			@_gl.uniformMatrix4fv @_shaderProgram.mvMatrixUniform, false, mvMatrix
+
+pushMatrix
+----------
+
 I'm using the matrix stack from the tutorial here. Another method might be used later.
 
 		pushMatrix: ->
 			@_mvMatrixStack.push mat4.clone @_mvMatrix
 
+popMatrix
+---------
+
 		popMatrix: ->
 			throw Error 'Invalid popMatrix' if @_mvMatrixStack.length < 1
 			@_mvMatrix = @_mvMatrixStack.pop()
+
+deg2Rad
+-------
 
 A conversion of degrees to radians is needed
 
 		deg2Rad: ( degrees ) ->
 			degrees * Math.PI / 180
 
-#### <a name="drawScene"></a>drawScene
-Finally it's time for rendering the scene.
+drawScene
+---------
+
+To draw the scene we start by clearing the viewport and getting the view matrix from the camera.
 
 		drawScene: ( meshes ) ->
-
-Set up the viewport and clear it.
-
-			@_gl.viewport 0, 0, @_gl.viewportWidth, @_gl.viewportHeight
 			@_gl.clear @_gl.COLOR_BUFFER_BIT | @_gl.DEPTH_BUFFER_BIT
+			viewMatrix = mat4.create()
+			cameraPosition	= [0, 0, -10]
+			cameraTarget	= [0, 0, 0]
+			cameraRotation = mat4.create()
+			mat4.rotateY cameraRotation, cameraRotation, ( @deg2Rad @_cubeRotation )
+			cameraTranslation = mat4.create()
+			mat4.translate cameraTranslation, cameraTranslation, cameraPosition
+			cameraMatrix = mat4.create()
+			mat4.multiply cameraMatrix, cameraTranslation, cameraMatrix
+			mat4.multiply cameraMatrix, cameraRotation, cameraMatrix
+			cameraPosition = cameraMatrix.subarray 12, 15
+			mat4.lookAt viewMatrix, cameraPosition, cameraTarget, [0, 1, 0]
 
-Initialize the perspective matrix.
-
-			mat4.perspective @_pMatrix, 45, @_gl.viewportWidth / @_gl.viewportHeight, 0.1, 100.0, @_pMatrix
-
-Initialize the view matrix.
-
-			mat4.identity @_mvMatrix
+Then for each mesh, push the correct buffers to GL.
 
 			for mesh in meshes
-				mat4.translate @_mvMatrix, mat4.create(), mesh.position
-				@pushMatrix()
-				mat4.rotate @_mvMatrix, @_mvMatrix, ( @deg2Rad @_cubeRotation ), [-1, 1, 1]
-				debugString = @_cubeRotation.toFixed( 2 ).toString()
-				( document.getElementById 'cubeRot' ).value = mat4.str @_mvMatrix
 				@_gl.bindBuffer @_gl.ARRAY_BUFFER, mesh.vertexBuffer
 				@_gl.vertexAttribPointer @_shaderProgram.vertexPositionAttribute, mesh.vertexSize, @_gl.FLOAT, false, 0, 0
-
 				@_gl.bindBuffer @_gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer
 
-				@setMatrixUniforms()
-				@_gl.drawElements @_gl.TRIANGLE_FAN, mesh.numIndices, @_gl.UNSIGNED_SHORT, 0
-				@popMatrix()
+Create a model matrix representing the translation and rotation of the object. Multiply the model matrix with the view
+matrix. Multiply that matrix with the projectionMatrix and pass it in to the shader.
+
+				modelMatrix = mat4.create()
+				mat4.translate modelMatrix, modelMatrix, [0, 0, 0]
+				#mat4.rotate modelMatrix, modelMatrix, ( @deg2Rad @_cubeRotation * 2 ), [1, 0, 0]
+				mat4.multiply modelMatrix, viewMatrix, modelMatrix
+				mat4.multiply modelMatrix, @_pMatrix, modelMatrix
+				@_gl.uniformMatrix4fv @_shaderProgram.mvMatrixUniform, false, modelMatrix
+
+Finally draw the mesh as a triangle fan.
+
+				@_gl.drawElements @_gl.TRIANGLES, mesh.numIndices, @_gl.UNSIGNED_SHORT, 0
+
+tick
+----
 
 Lets spice tings up with some animation
 

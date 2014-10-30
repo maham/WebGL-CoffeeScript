@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Metronome</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="app.html">
+                app.litcoffee
+              </a>
+            
+              
+              <a class="source" href="camera.html">
+                camera.litcoffee
+              </a>
+            
+              
+              <a class="source" href="gl.html">
+                gl.litcoffee
+              </a>
+            
+              
+              <a class="source" href="glmath.html">
+                glmath.litcoffee
+              </a>
+            
+              
+              <a class="source" href="loader.html">
+                loader.litcoffee
+              </a>
+            
+              
+              <a class="source" href="mesh.html">
+                mesh.litcoffee
+              </a>
+            
+              
+              <a class="source" href="metronome.html">
+                metronome.litcoffee
+              </a>
+            
+              
+              <a class="source" href="microevent.html">
+                microevent.litcoffee
+              </a>
+            
+              
+              <a class="source" href="objparser.html">
+                objparser.litcoffee
+              </a>
+            
+              
+              <a class="source" href="time.html">
+                time.litcoffee
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="metronome">Metronome</h1>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <h2 id="dependencies">Dependencies</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>Metronome will emit a “Tick” at constant intervals. <a href="microevent.html">MicroEvent</a> will help with handling of the event
+listeners and distribution. We will also make use of the functions in <a href="time.html">time</a> to make sure that we have
+access to some kind of timekeeper with a good enough resolution.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>MicroEvent	= <span class="hljs-built_in">require</span> <span class="hljs-string">'app/microevent'</span>
+time		= <span class="hljs-built_in">require</span> <span class="hljs-string">'app/time'</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <h2 id="metronome">Metronome</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>The Metronome is the pacekeeper of the app. It will keep ticking at a set speed and emit ticks at given intervals.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-built_in">module</span>.<span class="hljs-built_in">exports</span> = <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Metronome</span></span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <h2 id="constructor">constructor</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>To create a metronome we need the pace of the ticks. <code>FPS</code> give us this as Frames Per Second which should be familiar
+to most gamers. This will be stored as <code>timeBetweenTicks</code>. A couple of other members will be needed later so we make
+sure to define them in the constructor.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">constructor</span>: <span class="hljs-function"><span class="hljs-params">( FPS )</span> -&gt;</span>
+		<span class="hljs-property">@timeBetweenTicks</span> = <span class="hljs-number">1</span> / FPS
+		<span class="hljs-property">@lastT</span> = <span class="hljs-literal">null</span>
+		<span class="hljs-property">@timeAccumulator</span> = <span class="hljs-number">0</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <h2 id="start">start</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>When it’s time to start the metronome we do so simply by calling it’s start method. Here we set <code>lastT</code> to the current
+timestamp to make sure we don’t get a huge jump in the first update. Then we call <code>tick</code> and emit a <code>Start</code> event to
+eventual listeners.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">start</span>:<span class="hljs-function"> -&gt;</span>
+		<span class="hljs-property">@lastT</span> = Date.now()
+		<span class="hljs-property">@tick</span>()
+		<span class="hljs-property">@emit</span> <span class="hljs-string">"Start"</span>
+		<span class="hljs-keyword">return</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <h2 id="stop">stop</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>If we need to stop the <code>Metronome</code> for some reason we first have to cancel the <code>tick</code> loop. Then we increase the
+<code>timeAccumulator</code> with the time since the last <code>tick</code> to make sure we don’t lose any time. Finally we make sure to send
+a <code>Stop</code> event to any listeners who care.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">stop</span>:<span class="hljs-function"> -&gt;</span>
+		time.cancelAnimationFrame <span class="hljs-property">@tick</span>
+		t = Date.now()
+		<span class="hljs-property">@timeAccumulator</span> += ( t - <span class="hljs-property">@lastT</span> ) / <span class="hljs-number">1000</span>
+		<span class="hljs-property">@emit</span> <span class="hljs-string">"Stop"</span>
+		<span class="hljs-keyword">return</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <h2 id="tick">tick</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>The tick method will emit a <code>Tick</code> event every time the time given by <code>timeBetweenTicks</code> has passed. Multiple <code>Tick</code>
+events may be sent from a single call to <code>tick</code> if enough time has passed. If not enough time has passed no <code>Tick</code>
+event will be sent. This way the simulation dependent on the ticks will stay consistent.</p>
+<p>First we will make sure to request a new call to <code>tick</code> as soon as the system is ready. Then we increase
+<code>timeBetweenTicks</code> with the amount of time that has passed since the last call to <code>tick</code>. We emit a <code>Tick</code> event for
+every time period <code>timeBetweenTicks</code> that has passed and <code>timeAccumulator</code> is decreased by that amount of time. We
+finish by storing the last timestamp in <code>lastT</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">tick</span>:<span class="hljs-function"> =&gt;</span>
+		time.requestAnimationFrame <span class="hljs-property">@tick</span>
+
+		t = Date.now()
+		<span class="hljs-property">@timeAccumulator</span> += ( t - <span class="hljs-property">@lastT</span> ) / <span class="hljs-number">1000</span>
+
+		<span class="hljs-keyword">while</span> <span class="hljs-property">@timeAccumulator</span> &gt; <span class="hljs-property">@timeBetweenTicks</span>
+			<span class="hljs-property">@timeAccumulator</span> -= <span class="hljs-property">@timeBetweenTicks</span>
+			<span class="hljs-property">@emit</span> <span class="hljs-string">"Tick"</span>
+
+		<span class="hljs-property">@lastT</span> = t
+		<span class="hljs-keyword">return</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <h2 id="mixins">Mixins</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>To add support for event emission we mix <a href="microevent.html">MicroEvent</a> into the Metronome prototype.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>MicroEvent.Mixin Metronome</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

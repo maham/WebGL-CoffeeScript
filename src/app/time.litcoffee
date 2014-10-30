@@ -1,4 +1,6 @@
 
+	requestAnimationFrame = window["requestAnimationFrame"]
+	
 	for vendor in ['ms', 'moz', 'webkit', 'o']
 			break if requestAnimationFrame
 			requestAnimationFrame = window["#{vendor}RequestAnimationFrame"]

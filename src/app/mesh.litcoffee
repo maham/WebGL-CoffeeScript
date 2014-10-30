@@ -2,4 +2,6 @@ Mesh
 ====
 
 	module.exports = class Mesh
-		constructor: ( @vertexBuffer, @vertexSize, @numVertices, @indexBuffer, @numIndices, @position ) ->
+		constructor: ( settings ) ->
+			for own key, value of settings
+				@[key] = value

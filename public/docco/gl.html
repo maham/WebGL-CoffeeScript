@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>GL</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="app.html">
+                app.litcoffee
+              </a>
+            
+              
+              <a class="source" href="camera.html">
+                camera.litcoffee
+              </a>
+            
+              
+              <a class="source" href="gl.html">
+                gl.litcoffee
+              </a>
+            
+              
+              <a class="source" href="glmath.html">
+                glmath.litcoffee
+              </a>
+            
+              
+              <a class="source" href="loader.html">
+                loader.litcoffee
+              </a>
+            
+              
+              <a class="source" href="mesh.html">
+                mesh.litcoffee
+              </a>
+            
+              
+              <a class="source" href="metronome.html">
+                metronome.litcoffee
+              </a>
+            
+              
+              <a class="source" href="microevent.html">
+                microevent.litcoffee
+              </a>
+            
+              
+              <a class="source" href="objparser.html">
+                objparser.litcoffee
+              </a>
+            
+              
+              <a class="source" href="time.html">
+                time.litcoffee
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="gl">GL</h1>
+<p>GL is the central object handling WebGL calls. Currently it’s taking care of every function that needs the gl object.</p>
+<h2 id="dependencies">Dependencies</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>To wrap the data needed for drawing meshes we import the extremely simple Mesh class. For parsing .obj file data into
+structures convenient for creating meshes we use the ObjParser which can parse simple .obj files.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>Mesh		= <span class="hljs-built_in">require</span> <span class="hljs-string">'app/mesh'</span>
+ObjParser 	= <span class="hljs-built_in">require</span> <span class="hljs-string">'app/objparser'</span>
+Camera		= <span class="hljs-built_in">require</span> <span class="hljs-string">'app/camera'</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <h2 id="gl">GL</h2>
+<p>First we need the class itself. I will call it GL at the moment and see if that sticks.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-built_in">module</span>.<span class="hljs-built_in">exports</span> = <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">GL</span></span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <h2 id="constructor">constructor</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>The constructor need the element id of the canvas element where we will initialize the WebGL context. The view matrix
+the projection matrix and the matrix stack are also initialized here.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">constructor</span>: <span class="hljs-function"><span class="hljs-params">( canvasElementId )</span> -&gt;</span>
+		<span class="hljs-property">@_pMatrix</span>		= mat4.create()
+		<span class="hljs-property">@_mvMatrix</span>		= mat4.create()
+		<span class="hljs-property">@_mvMatrixStack</span>	= []
+		<span class="hljs-property">@_cubeRotation</span>	= <span class="hljs-number">0.0</span>
+		<span class="hljs-property">@_camera</span>		= <span class="hljs-keyword">new</span> Camera [<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, -<span class="hljs-number">10</span>], [<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>]</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>Fetch the element and then get the <code>webgl</code> context from it. If this fails try <code>experimental-webgl</code>. This might throw an
+exception and we have to catch that. It might be better to just let the exception fall through but this way a better
+error message can be shown. I will still throw the exception but now I can couple it with a console line to make sure I
+know why the program halted.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		canvasElement = <span class="hljs-built_in">document</span>.getElementById canvasElementId
+
+		<span class="hljs-keyword">try</span>
+			<span class="hljs-property">@_gl</span> = canvasElement.getContext <span class="hljs-string">'webgl'</span> || canvasElement.getContext <span class="hljs-string">'experimental-webgl'</span>
+		<span class="hljs-keyword">catch</span> error
+			<span class="hljs-built_in">console</span>.log <span class="hljs-string">'Failed to initialize WebGL using the element '</span> + canvas + <span class="hljs-string">'. Error:\n'</span> + error
+			<span class="hljs-keyword">throw</span> error</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>Tack the physical dimensions of the element onto the gl context. We need them to be able to specify the viewport later.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-property">@_gl</span>.viewportWidth = canvasElement.width
+		<span class="hljs-property">@_gl</span>.viewportHeight = canvasElement.height
+		mat4.perspective <span class="hljs-property">@_pMatrix</span>, <span class="hljs-number">45</span>, canvasElement.width / canvasElement.height, <span class="hljs-number">0.1</span>, <span class="hljs-number">100.0</span>, <span class="hljs-property">@_pMatrix</span>
+		<span class="hljs-property">@_gl</span>.viewport <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, canvasElement.width, canvasElement.height</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>Clear the buffer, enable depth testing and enable backface culling.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-property">@_gl</span>.clearColor <span class="hljs-number">0.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">1.0</span>
+		<span class="hljs-property">@_gl</span>.enable <span class="hljs-property">@_gl</span>.DEPTH_TEST
+		<span class="hljs-property">@_gl</span>.enable <span class="hljs-property">@_gl</span>.CULL_FACE</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <h2 id="fetchshaderfromelement">fetchShaderFromElement</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>Shaders can be located inside a <code>&lt;script&gt;</code> tag in the HTML. This method parses an element specified by its id.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">fetchShaderFromElement</span>: <span class="hljs-function"><span class="hljs-params">( shaderElementId )</span> -&gt;</span>
+		shaderElement = <span class="hljs-built_in">document</span>.getElementById shaderElementId</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>If the given element doesn’t exist we stop the execution straight away. Same thing if it’s not a shader element. It
+should be a script tag with the type attribute set to either <code>x-shader/x-fragment</code> or <code>x-shader/x-vertex</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> Error <span class="hljs-string">'No shader with id: '</span> + shaderElementId <span class="hljs-keyword">unless</span> shaderElement
+		<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> Error <span class="hljs-string">'Not a shader element: '</span> + shaderElement <span class="hljs-keyword">unless</span> shaderElement.type == <span class="hljs-string">'x-shader/x-fragment'</span> <span class="hljs-keyword">or</span> shaderScript.type == <span class="hljs-string">'x-shader/x-vertex'</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>The shader code is just text so we can just traverse through the element and glue together all nodes with nodeType 3
+(text nodes) to a combined string with the shader code in it.
+<em>NOTE:</em> This might not be the best way to do this. I think I can actually use the innerHTML property. I’ll try that
+later.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		shaderCode = <span class="hljs-string">""</span>
+		currentScriptNode = shaderElement.firstChild
+
+		<span class="hljs-keyword">while</span> currentScriptNode
+			shaderCode += currentScriptNode.textContent <span class="hljs-keyword">if</span> currentScriptNode.nodeType == <span class="hljs-number">3</span>
+			currentScriptNode = currentScriptNode.nextSibling
+
+		<span class="hljs-keyword">return</span> shaderCode;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <h2 id="compileshader">compileShader</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>To use the shaders they will have to be compiled. The first parameter is a string containing the GLSL code and the
+second parameter will give the type of shader to create. Currently there is no mechanism to match the shader code to
+the shader type. Extracting a shader class from this is probably the way to go. Later…</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">compileShader</span>: <span class="hljs-function"><span class="hljs-params">( shaderCode, shaderType )</span> -&gt;</span>
+		shader = <span class="hljs-property">@_gl</span>.createShader shaderType
+
+		<span class="hljs-property">@_gl</span>.shaderSource shader, shaderCode
+		<span class="hljs-property">@_gl</span>.compileShader shader</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>After compilation we can check the compile status parameter of the shader to make sure everything went all right.
+Otherwise we throw an exception as there is currently no real point in continuing execution if a shader compilation
+fails.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">unless</span> <span class="hljs-property">@_gl</span>.getShaderParameter shader, <span class="hljs-property">@_gl</span>.COMPILE_STATUS
+			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> Error <span class="hljs-property">@_gl</span>.getShaderInfoLog
+
+		<span class="hljs-keyword">return</span> shader</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <h2 id="initshaders">initShaders</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>This method takes care of loading and compiling the fragment and vertex shaders.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">initShaders</span>: <span class="hljs-function"><span class="hljs-params">( fragmentShaderElementId, vertexShaderElementId )</span> -&gt;</span>
+		<span class="hljs-property">@_fragmentShader</span> = <span class="hljs-property">@compileShader</span> ( <span class="hljs-property">@fetchShaderFromElement</span> fragmentShaderElementId ), <span class="hljs-property">@_gl</span>.FRAGMENT_SHADER
+		<span class="hljs-property">@_vertexShader</span> = <span class="hljs-property">@compileShader</span> ( <span class="hljs-property">@fetchShaderFromElement</span> vertexShaderElementId ), <span class="hljs-property">@_gl</span>.VERTEX_SHADER</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <h2 id="createshaderprogram">createShaderProgram</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>Here we combine the fragment and vertex shader into a shader program. This is done by first creating the shader program
+itself, attaching the shaders to it and last linking the program. Failure to link will result in an exception.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">createShaderProgram</span>: <span class="hljs-function"><span class="hljs-params">( fragmentShaderSource, vertexShaderSource )</span> -&gt;</span>
+		shaderProgram = <span class="hljs-property">@_gl</span>.createProgram()
+		<span class="hljs-property">@_gl</span>.attachShader shaderProgram, <span class="hljs-property">@compileShader</span> fragmentShaderSource, <span class="hljs-property">@_gl</span>.FRAGMENT_SHADER
+		<span class="hljs-property">@_gl</span>.attachShader shaderProgram, <span class="hljs-property">@compileShader</span> vertexShaderSource, <span class="hljs-property">@_gl</span>.VERTEX_SHADER
+
+		<span class="hljs-property">@_gl</span>.linkProgram shaderProgram
+		<span class="hljs-keyword">unless</span> <span class="hljs-property">@_gl</span>.getProgramParameter shaderProgram, <span class="hljs-property">@_gl</span>.LINK_STATUS
+			<span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> Error <span class="hljs-string">'Could not initialize shaders.'</span>
+
+		<span class="hljs-keyword">return</span> shaderProgram</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <h2 id="setshader">setShader</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p>Set the shader program to use for rendering and get references to the variables that’s needed to interact with the
+shader. The references are stored in the shader program object.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">setShader</span>: <span class="hljs-function"><span class="hljs-params">( <span class="hljs-property">@_shaderProgram</span> )</span> -&gt;</span>
+		<span class="hljs-property">@_gl</span>.useProgram <span class="hljs-property">@_shaderProgram</span>
+
+		<span class="hljs-property">@_shaderProgram</span>.vertexPositionAttribute = <span class="hljs-property">@_gl</span>.getAttribLocation <span class="hljs-property">@_shaderProgram</span>, <span class="hljs-string">'aVertexPosition'</span>
+		<span class="hljs-keyword">throw</span> Error <span class="hljs-string">'Failed to get reference to "aVertexPosition" in shader program.'</span> <span class="hljs-keyword">unless</span> <span class="hljs-property">@_shaderProgram</span>.vertexPositionAttribute?
+		<span class="hljs-property">@_gl</span>.enableVertexAttribArray <span class="hljs-property">@_shaderProgram</span>.vertexPositionAttribute</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p>@_shaderProgram.pMatrixUniform = @_gl.getUniformLocation @_shaderProgram, ‘uPMatrix’
+throw Error ‘Failed to get reference to “uPMatrix” in shader program.’ unless @_shaderProgram.pMatrixUniform?</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+		<span class="hljs-property">@_shaderProgram</span>.mvMatrixUniform = <span class="hljs-property">@_gl</span>.getUniformLocation <span class="hljs-property">@_shaderProgram</span>, <span class="hljs-string">'uMVMatrix'</span>
+		<span class="hljs-keyword">throw</span> Error <span class="hljs-string">'Failed to get reference to "uMVMatrix" in shader program.'</span> <span class="hljs-keyword">unless</span> <span class="hljs-property">@_shaderProgram</span>.mvMatrixUniform?</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <h2 id="createmesh">createMesh</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <p>Utility to create a mesh.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">createMesh</span>: <span class="hljs-function"><span class="hljs-params">( settings )</span> -&gt;</span>
+		vertexBuffer = <span class="hljs-property">@_gl</span>.createBuffer()
+		<span class="hljs-property">@_gl</span>.bindBuffer <span class="hljs-property">@_gl</span>.ARRAY_BUFFER, vertexBuffer
+		<span class="hljs-property">@_gl</span>.bufferData <span class="hljs-property">@_gl</span>.ARRAY_BUFFER, ( <span class="hljs-keyword">new</span> Float32Array settings.vertices ), <span class="hljs-property">@_gl</span>.STATIC_DRAW
+
+		indexBuffer = <span class="hljs-property">@_gl</span>.createBuffer()
+		<span class="hljs-property">@_gl</span>.bindBuffer <span class="hljs-property">@_gl</span>.ELEMENT_ARRAY_BUFFER, indexBuffer
+		<span class="hljs-property">@_gl</span>.bufferData <span class="hljs-property">@_gl</span>.ELEMENT_ARRAY_BUFFER, ( <span class="hljs-keyword">new</span> Uint16Array settings.indices ), <span class="hljs-property">@_gl</span>.STATIC_DRAW
+
+		<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> Mesh
+			<span class="hljs-attribute">vertexBuffer</span>:	vertexBuffer
+			<span class="hljs-attribute">vertexSize</span>:		settings.vertexSize
+			<span class="hljs-attribute">numVertices</span>:	settings.vertices.length / settings.vertexSize
+			<span class="hljs-attribute">indexBuffer</span>:	indexBuffer
+			<span class="hljs-attribute">numIndices</span>:		settings.indices.length
+			<span class="hljs-attribute">position</span>:		settings.position</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <h2 id="createmeshfromobj">createMeshFromObj</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <p>Creates a mesh from a WaveFront .obj file.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">createMeshFromObj</span>: <span class="hljs-function"><span class="hljs-params">( objData, position )</span> -&gt;</span>
+		parser = <span class="hljs-keyword">new</span> ObjParser
+		parser.parse objData
+		<span class="hljs-property">@createMesh</span>
+			<span class="hljs-attribute">vertices</span>:		parser.out[<span class="hljs-number">0</span>]
+			<span class="hljs-attribute">vertexSize</span>:		<span class="hljs-number">3</span>
+			<span class="hljs-attribute">indices</span>:		parser.indices
+			<span class="hljs-attribute">numIndices</span>:		parser.indices.length
+			<span class="hljs-attribute">position</span>:		[<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>]</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <h2 id="setmvmatrix">setMvMatrix</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">setMvMatrix</span>: <span class="hljs-function"><span class="hljs-params">( modelMatrix, viewMatrix, projectionMatrix )</span> -&gt;</span>
+		mvMatrix = mat4.create()
+		mat4.multiply mvMatrix, modelMatrix, viewMatrix
+		mat4.multiply mvMatrix, mvMatrix, projectionMatrix
+		<span class="hljs-property">@_gl</span>.uniformMatrix4fv <span class="hljs-property">@_shaderProgram</span>.mvMatrixUniform, <span class="hljs-literal">false</span>, mvMatrix</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <h2 id="pushmatrix">pushMatrix</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <p>I’m using the matrix stack from the tutorial here. Another method might be used later.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">pushMatrix</span>:<span class="hljs-function"> -&gt;</span>
+		<span class="hljs-property">@_mvMatrixStack</span>.push mat4.clone <span class="hljs-property">@_mvMatrix</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              <h2 id="popmatrix">popMatrix</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">popMatrix</span>:<span class="hljs-function"> -&gt;</span>
+		<span class="hljs-keyword">throw</span> Error <span class="hljs-string">'Invalid popMatrix'</span> <span class="hljs-keyword">if</span> <span class="hljs-property">@_mvMatrixStack</span>.length &lt; <span class="hljs-number">1</span>
+		<span class="hljs-property">@_mvMatrix</span> = <span class="hljs-property">@_mvMatrixStack</span>.pop()</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <h2 id="deg2rad">deg2Rad</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              <p>A conversion of degrees to radians is needed</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">deg2Rad</span>: <span class="hljs-function"><span class="hljs-params">( degrees )</span> -&gt;</span>
+		degrees * Math.PI / <span class="hljs-number">180</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <h2 id="drawscene">drawScene</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              <p>To draw the scene we start by clearing the viewport and getting the view matrix from the camera.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">drawScene</span>: <span class="hljs-function"><span class="hljs-params">( meshes )</span> -&gt;</span>
+		<span class="hljs-property">@_gl</span>.clear <span class="hljs-property">@_gl</span>.COLOR_BUFFER_BIT | <span class="hljs-property">@_gl</span>.DEPTH_BUFFER_BIT
+		viewMatrix = mat4.create()
+		cameraPosition	= [<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, -<span class="hljs-number">10</span>]
+		cameraTarget	= [<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>]
+		cameraRotation = mat4.create()
+		mat4.rotateY cameraRotation, cameraRotation, ( <span class="hljs-property">@deg2Rad</span> <span class="hljs-property">@_cubeRotation</span> )
+		cameraTranslation = mat4.create()
+		mat4.translate cameraTranslation, cameraTranslation, cameraPosition
+		cameraMatrix = mat4.create()
+		mat4.multiply cameraMatrix, cameraTranslation, cameraMatrix
+		mat4.multiply cameraMatrix, cameraRotation, cameraMatrix
+		cameraPosition = cameraMatrix.subarray <span class="hljs-number">12</span>, <span class="hljs-number">15</span>
+		mat4.lookAt viewMatrix, cameraPosition, cameraTarget, [<span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>]</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <p>Then for each mesh, push the correct buffers to GL.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">for</span> mesh <span class="hljs-keyword">in</span> meshes
+			<span class="hljs-property">@_gl</span>.bindBuffer <span class="hljs-property">@_gl</span>.ARRAY_BUFFER, mesh.vertexBuffer
+			<span class="hljs-property">@_gl</span>.vertexAttribPointer <span class="hljs-property">@_shaderProgram</span>.vertexPositionAttribute, mesh.vertexSize, <span class="hljs-property">@_gl</span>.FLOAT, <span class="hljs-literal">false</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>
+			<span class="hljs-property">@_gl</span>.bindBuffer <span class="hljs-property">@_gl</span>.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              <p>Create a model matrix representing the translation and rotation of the object. Multiply the model matrix with the view
+matrix. Multiply that matrix with the projectionMatrix and pass it in to the shader.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			modelMatrix = mat4.create()
+			mat4.translate modelMatrix, modelMatrix, [<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>]</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <p>mat4.rotate modelMatrix, modelMatrix, ( @deg2Rad @_cubeRotation * 2 ), [1, 0, 0]</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			mat4.multiply modelMatrix, viewMatrix, modelMatrix
+			mat4.multiply modelMatrix, <span class="hljs-property">@_pMatrix</span>, modelMatrix
+			<span class="hljs-property">@_gl</span>.uniformMatrix4fv <span class="hljs-property">@_shaderProgram</span>.mvMatrixUniform, <span class="hljs-literal">false</span>, modelMatrix</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              <p>Finally draw the mesh as a triangle fan.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			<span class="hljs-property">@_gl</span>.drawElements <span class="hljs-property">@_gl</span>.TRIANGLES, mesh.numIndices, <span class="hljs-property">@_gl</span>.UNSIGNED_SHORT, <span class="hljs-number">0</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              <h2 id="tick">tick</h2>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              <p>Lets spice tings up with some animation</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-attribute">tick</span>:<span class="hljs-function"> -&gt;</span>
+		<span class="hljs-property">@_cubeRotation</span> += <span class="hljs-number">1.5</span></pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
