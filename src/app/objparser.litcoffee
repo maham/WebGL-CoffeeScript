@@ -40,8 +40,8 @@ array is then passed in as the methods arguments.
 				@[tokens[0]].apply @, tokens[1..] if @[tokens[0]]
 			return
 
-v <!---->
----------
+v &nbsp;
+--------
 A vertex is created from three components, `x, y, z`. The .obj specification allows for a fourth `w` component which is
 ignored here. The arguments are parsed as floats, packed into an array and pushed into the first `parsed` array.
 
@@ -53,8 +53,8 @@ ignored here. The arguments are parsed as floats, packed into an array and pushe
 			]
 			return
 
-vn <!---->
-----------
+vn &nbsp;
+---------
 A normal is created from three components, `i, j, k`. The arguments are parsed as floats, packed into an array and
 pushed into the second `parsed` array.
 
@@ -66,8 +66,8 @@ pushed into the second `parsed` array.
 			]
 			return
 
-vt <!---->
-----------
+vt &nbsp;
+---------
 A texel, texture coordinate, is created from two components, `u, v`. The .obj specification allows for a third `w`
 component which is ignored here. The arguments are parsed as floats, packed into an array and pushed into the third
 `parsed` array.
@@ -79,8 +79,8 @@ component which is ignored here. The arguments are parsed as floats, packed into
 			]
 			return
 
-f <!---->
----------
+f &nbsp;
+--------
 _To render a mesh with OpenGL we usually use a list of vertices and indices. Each vertex as it is sent to the
 shader is usually a combination of the position, the normal and the texel. Ex: `[X, Y, Z, Nx, Ny, Nz, Tu, Tv]`. This is
 a vertex of size 8 (eight components in total). When we look at a .obj file it can be very well optimized and a lot of
@@ -119,6 +119,6 @@ then this will have to be changed to indicate the index of the 'reused' vertex i
 				@indices.push @indices.length
 			return
 
-<!-- Sorry for the empty comments I have added to some of the method headers. They are there as the markdown parser
+<!-- Sorry for the non breaking spaces I have added to some of the method headers. They are there as the markdown parser
 really don't like one char headers if I'm using the hyphen H2 markdown. But I still want it instead of the hash version
 as it's a lot better for the readability. -->
