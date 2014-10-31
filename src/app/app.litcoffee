@@ -7,12 +7,15 @@ available right here on the site you are reading so feel free to have a look aro
 
 Dependencies
 ------------
-We have a couple of external classes to get the app running. We need [GL](gl.litcoffee "Utility class for WebGL") to handle
-the WebGL related tasks. And we will need [time](time.litcoffee "High performance timer functions") for the game loop timer.
+We have a couple of external classes to get the app running. [GL](gl.litcoffee "Utility class for WebGL") will handle
+the WebGL related tasks. [Metronome](metronome.litcoffee "Time ticker class") is a good for keeping the game loop
+ticking. [MicroAjax](microajax.litcoffee "Very small AJAX loader") helps with resource loading. Last out is
+[Camera](camera.litcoffee "Simple look at camera class." ).
 
 	GL			= require 'app/gl'
 	Metronome	= require 'app/metronome'
-	microAjax	= require 'app/microajax'
+	MicroAjax	= require 'app/microajax'
+	Camera		= require 'app/camera'
 
 Start the application
 ---------------------
@@ -24,36 +27,42 @@ this method will be sufficient.
 
 The shaders are loaded asynchronously as text. Pre-compiled shaders don't exist in WebGL yet and it's probably not high
 on the list as it would be a security concern as far as I understand it. So let's create a couple of variables store
-the shader code in until we are ready init GL.
+the shader code in until we are ready init GL. We will also require a couple of meshes to render and as the shader code
+and the mesh data will be loaded asynchronously we need somewhere to store the mesh data too.
 
 		fragmentShaderSource	=
 		vertexShaderSource		=
-		cubeData				= undefined;
+		cubeData				=
+		capsuleData				= null
 
-Now it's time to start the asynchronous loading of the shaders. Store the shader code when the ajax request is done.
-As there is two shaders that are both loaded async the app must wait until both are loaded before continuing execution
-of the app.
+Now it's time to start loading the shadercode. As there is two shaders that are both loaded async the app must wait
+until both are loaded before there is any point in starting up WebGL. This is a good moment to start the laoding of
+the meshes as well.
 
-		console.log 'Starting to load shaders.'
-		new microAjax './fShader.frag', ( resource ) ->
+		new MicroAjax './fShader.frag', ( resource ) ->
 			console.log 'Fragment shader loaded.'
 			fragmentShaderSource = resource
 
-		new microAjax './vShader.vert', ( resource ) ->
+		new MicroAjax './vShader.vert', ( resource ) ->
 			console.log 'Vertex shader loaded.'
 			vertexShaderSource = resource
 
-		new microAjax './capsule.obj', ( resource ) ->
+		new MicroAjax './cube.obj', ( resource ) ->
 			console.log 'Cube data loaded.'
 			cubeData = resource
 
-#### waitForAssets
+		new MicroAjax './capsule.obj', ( resource ) ->
+			console.log 'Capsule data loaded.'
+			capsuleData = resource
+
+waitForAssets
+-------------
 This method does exactly what is says. It waits for the assets to load in one second loops and when all assets are done
 loading it will call [`startGL`](#startgl).
 
 		waitForAssets = ->
 			setTimeout ->
-				if fragmentShaderSource? and vertexShaderSource? and cubeData?
+				if fragmentShaderSource? and vertexShaderSource? and cubeData? and capsuleData?
 					startGL 'lesson01-canvas', fragmentShaderSource, vertexShaderSource
 				else
 					waitForAssets()
@@ -61,28 +70,34 @@ loading it will call [`startGL`](#startgl).
 
 		waitForAssets()
 
-We need another couple of globals to store the mesh we are going to draw, and to store the gl object that will take
-care of the 3D rendering.
-
-		gl = null
-		cube = null
-		metronome = new Metronome 60
-		metronome.on "Tick", ->
-			gl.tick()
-			gl.drawScene [cube]
-			return
-
-### startGL
+startGL
+-------
+After GL is initialized the shader program have to be compiled and linked.
 
 		startGL = ( canvasElementId, fragmentShaderSource, vertexShaderSource ) ->
 			gl = new GL canvasElementId
-
-After GL is initialized the shader program have to be compiled and linked.
 
 			shader = gl.createShaderProgram fragmentShaderSource, vertexShaderSource
 			gl.setShader shader
 
 			cube = gl.createMeshFromObj cubeData
+			cube.position[0] = 2
+
+			capsule = gl.createMeshFromObj capsuleData
+			capsule.position[0] = -2
+
+			camera = new Camera [0, 0, 7], [0, 0, 0]
+
+			metronome = new Metronome 60
+			metronome.on "Tick", ->
+				cube.rotation[0] += 2
+				cube.rotation[1] += 0.67
+
+				capsule.rotation[2] += 0.8
+				capsule.rotation[0] += 0.7
+
+				gl.drawScene camera, [cube, capsule]
+				return
 
 			metronome.start()
 	, false
