@@ -8,7 +8,7 @@ the one time handler._
 
 TODO
 ----
-* <strike>I'm using a class here. A mixin would maybe be more fitting.</strike>
+* ~~I'm using a class here. A mixin would maybe be more fitting.~~
 * A usage example would maybe be in order.
 
 MicroEvent
@@ -18,8 +18,8 @@ Inherit MicroEvent for nice and clean event support
 	module.exports = class MicroEvent
 
 No constructor added as it would require a call to 'super' which would be open to errors from forgetting to call it.
-<strike>If I recode as a mixin instead of a class I could do the required setup (creation of `@_events`) in the mix
-function.</strike> _I decided to add `Mixin` as a class method and as it's still possible to extend from `MicroEvent` I
+~~If I recode as a mixin instead of a class I could do the required setup (creation of `@_events`) in the mix
+function.~~ _I decided to add `Mixin` as a class method and as it's still possible to extend from `MicroEvent` I
 think it's better to do the extra checks in the methods then to make the class behave differently if used as a mixin
 instead of a parent class._
 
