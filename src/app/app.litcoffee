@@ -7,7 +7,7 @@ available right here on the site you are reading so feel free to have a look aro
 
 Dependencies
 ------------
-We have a couple of external classes to get the app running. We need [GL](gl.html "Utility class for WebGL") to handle
+We have a couple of external classes to get the app running. We need [GL](gl.litcoffee "Utility class for WebGL") to handle
 the WebGL related tasks. And we will need [time](time.html "High performance timer functions") for the game loop timer.
 
 	GL = require 'app/gl'
