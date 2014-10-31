@@ -3,8 +3,8 @@ Metronome
 
 Dependencies
 ------------
-Metronome will emit a "Tick" at constant intervals. [MicroEvent](microevent.html) will help with handling of the event
-listeners and distribution. We will also make use of the functions in [time](time.html) to make sure that we have
+Metronome will emit a "Tick" at constant intervals. [MicroEvent](microevent.litecoffee) will help with handling of the event
+listeners and distribution. We will also make use of the functions in [time](time.litcoffee) to make sure that we have
 access to some kind of timekeeper with a good enough resolution.
 
 	MicroEvent	= require 'app/microevent'
