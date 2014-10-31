@@ -174,6 +174,7 @@ Utility to create a mesh.
 				indexBuffer:	indexBuffer
 				numIndices:		settings.indices.length
 				position:		settings.position
+				rotation:		[0, 0, 0]
 
 createMeshFromObj
 -----------------
@@ -184,7 +185,7 @@ Creates a mesh from a WaveFront .obj file.
 			parser = new ObjParser
 			parser.parse objData
 			@createMesh
-				vertices:		parser.out[0]
+				vertices:		parser.out
 				vertexSize:		3
 				indices:		parser.indices
 				numIndices:		parser.indices.length
@@ -227,20 +228,9 @@ drawScene
 
 To draw the scene we start by clearing the viewport and getting the view matrix from the camera.
 
-		drawScene: ( meshes ) ->
+		drawScene: ( camera, meshes ) ->
 			@_gl.clear @_gl.COLOR_BUFFER_BIT | @_gl.DEPTH_BUFFER_BIT
-			viewMatrix = mat4.create()
-			cameraPosition	= [0, 0, -10]
-			cameraTarget	= [0, 0, 0]
-			cameraRotation = mat4.create()
-			mat4.rotateY cameraRotation, cameraRotation, ( @deg2Rad @_cubeRotation )
-			cameraTranslation = mat4.create()
-			mat4.translate cameraTranslation, cameraTranslation, cameraPosition
-			cameraMatrix = mat4.create()
-			mat4.multiply cameraMatrix, cameraTranslation, cameraMatrix
-			mat4.multiply cameraMatrix, cameraRotation, cameraMatrix
-			cameraPosition = cameraMatrix.subarray 12, 15
-			mat4.lookAt viewMatrix, cameraPosition, cameraTarget, [0, 1, 0]
+			viewMatrix = camera.getViewMatrix()
 
 Then for each mesh, push the correct buffers to GL.
 
@@ -253,21 +243,15 @@ Create a model matrix representing the translation and rotation of the object. M
 matrix. Multiply that matrix with the projectionMatrix and pass it in to the shader.
 
 				modelMatrix = mat4.create()
-				mat4.translate modelMatrix, modelMatrix, [0, 0, 0]
-				#mat4.rotate modelMatrix, modelMatrix, ( @deg2Rad @_cubeRotation * 2 ), [1, 0, 0]
+				mat4.translate modelMatrix, modelMatrix, mesh.position
+				mat4.rotateX modelMatrix, modelMatrix, ( @deg2Rad mesh.rotation[0] )
+				mat4.rotateY modelMatrix, modelMatrix, ( @deg2Rad mesh.rotation[1] )
+				mat4.rotateZ modelMatrix, modelMatrix, ( @deg2Rad mesh.rotation[2] )
 				mat4.multiply modelMatrix, viewMatrix, modelMatrix
 				mat4.multiply modelMatrix, @_pMatrix, modelMatrix
 				@_gl.uniformMatrix4fv @_shaderProgram.mvMatrixUniform, false, modelMatrix
 
-Finally draw the mesh as a triangle fan.
+Finally draw the mesh as triangles.
 
 				@_gl.drawElements @_gl.TRIANGLES, mesh.numIndices, @_gl.UNSIGNED_SHORT, 0
-
-tick
-----
-
-Lets spice tings up with some animation
-
-		tick: ->
-			@_cubeRotation += 1.5
 	
