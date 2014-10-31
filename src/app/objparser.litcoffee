@@ -21,7 +21,7 @@ try to reuse any vertices so the indices will each point to its own vertex.
 
 		constructor: ->
 			@parsed			= [[],[],[]]
-			@out			= [[],[],[]]
+			@out			= []
 			@indices		= []
 
 parse
@@ -53,19 +53,6 @@ ignored here. The arguments are parsed as floats, packed into an array and pushe
 			]
 			return
 
-vn &nbsp;
----------
-A normal is created from three components, `i, j, k`. The arguments are parsed as floats, packed into an array and
-pushed into the second `parsed` array.
-
-		vn: ( i, j, k ) ->
-			@parsed[1].push [
-				parseFloat i
-				parseFloat j
-				parseFloat k
-			]
-			return
-
 vt &nbsp;
 ---------
 A texel, texture coordinate, is created from two components, `u, v`. The .obj specification allows for a third `w`
@@ -79,6 +66,19 @@ component which is ignored here. The arguments are parsed as floats, packed into
 			]
 			return
 
+vn &nbsp;
+---------
+A normal is created from three components, `i, j, k`. The arguments are parsed as floats, packed into an array and
+pushed into the second `parsed` array.
+
+		vn: ( i, j, k ) ->
+			@parsed[1].push [
+				parseFloat i
+				parseFloat j
+				parseFloat k
+			]
+			return
+
 f &nbsp;
 --------
 _To render a mesh with OpenGL we usually use a list of vertices and indices. Each vertex as it is sent to the
@@ -88,7 +88,7 @@ vertices, texels, normals etc. might be shared between different faces etc. The 
 packed as shown above each vertex must have all information that is needed for that vertex so we have to combine the
 different aspects of the vertex some way. The way we do it here is by letting the f(aces) tell us what parts to combine
 into each vertex. If we encounter an f row we will receive an array of indices that in their turn gives the indices of
-the v(ertex), the v(ertex)n(ormal) and the v(ertex)t(exel). If we just take those and combine into an array we should
+the v(ertex), the v(ertex)t(exel) and the v(ertex)n(ormal). If we just take those and combine into an array we should
 be fine._
 
 __TODO: Currently we skip all components except the vertex index.__
@@ -114,8 +114,8 @@ then this will have to be changed to indicate the index of the 'reused' vertex i
 					if index > 0
 						parsedIndex = index - 1
 					else
-						parsedIndex = @parsed[currentComponentIndex].length - index
-					@out[currentComponentIndex].push.apply @out[currentComponentIndex], @parsed[currentComponentIndex][parsedIndex]
+						parsedIndex = @parsed[currentComponentIndex].length + index
+					@out.push.apply @out, @parsed[currentComponentIndex][parsedIndex]
 				@indices.push @indices.length
 			return
 
