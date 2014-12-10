@@ -10,7 +10,6 @@ structures convenient for creating meshes we use the ObjParser which can parse s
 
 	Mesh		= require 'app/mesh'
 	ObjParser 	= require 'app/objparser'
-	Camera		= require 'app/camera'
 
 GL
 --
@@ -28,8 +27,6 @@ the projection matrix and the matrix stack are also initialized here.
 			@_pMatrix		= mat4.create()
 			@_mvMatrix		= mat4.create()
 			@_mvMatrixStack	= []
-			@_cubeRotation	= 0.0
-			@_camera		= new Camera [0, 0, -10], [0, 0, 0]
 
 Fetch the element and then get the `webgl` context from it. If this fails try `experimental-webgl`. This might throw an
 exception and we have to catch that. It might be better to just let the exception fall through but this way a better

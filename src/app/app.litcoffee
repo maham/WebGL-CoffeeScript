@@ -12,10 +12,11 @@ the WebGL related tasks. [Metronome](metronome.litcoffee "Time ticker class") is
 ticking. [MicroAjax](microajax.litcoffee "Very small AJAX loader") helps with resource loading. Last out is
 [Camera](camera.litcoffee "Simple look at camera class." ).
 
-	GL			= require 'app/gl'
-	Metronome	= require 'app/metronome'
-	MicroAjax	= require 'app/microajax'
-	Camera		= require 'app/camera'
+	GL			= require "app/gl"
+	Metronome	= require "app/metronome"
+	MicroAjax	= require "app/microajax"
+	Camera		= require "app/camera"
+	Game		= require "app/game"
 
 Start the application
 ---------------------
@@ -75,29 +76,11 @@ startGL
 After GL is initialized the shader program have to be compiled and linked.
 
 		startGL = ( canvasElementId, fragmentShaderSource, vertexShaderSource ) ->
-			gl = new GL canvasElementId
-
-			shader = gl.createShaderProgram fragmentShaderSource, vertexShaderSource
-			gl.setShader shader
-
-			cube = gl.createMeshFromObj cubeData
+			game = new Game 60, canvasElementId, vertexShaderSource, fragmentShaderSource
+			game.start()
+			cube = game.addMesh cubeData
 			cube.position[0] = 2
-
-			capsule = gl.createMeshFromObj capsuleData
+			capsule = game.addMesh capsuleData
 			capsule.position[0] = -2
-
-			camera = new Camera [0, 0, 7], [0, 0, 0]
-
-			metronome = new Metronome 60
-			metronome.on "Tick", ->
-				cube.rotation[0] += 2
-				cube.rotation[1] += 0.67
-
-				capsule.rotation[2] += 0.8
-				capsule.rotation[0] += 0.7
-
-				gl.drawScene camera, [cube, capsule]
-				return
-
-			metronome.start()
+			game.setCamera new Camera [0, 0, 7], [0, 0, 0]
 	, false
