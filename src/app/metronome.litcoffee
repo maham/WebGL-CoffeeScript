@@ -43,7 +43,7 @@ stop
 ----
 If we need to stop the `Metronome` for some reason we first have to cancel the `tick` loop. Then we increase the
 `timeAccumulator` with the time since the last `tick` to make sure we don't lose any time. Finally we make sure to send
-a `Stop` event to any listeners who care.
+a `Stop` event to any registered observers.
 
 		stop: ->
 			time.cancelAnimationFrame @tick
