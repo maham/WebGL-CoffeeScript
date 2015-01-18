@@ -5,7 +5,8 @@ MicroAjax
 ---------
 MicroAjax is a very small AJAX utility used for async loading of resources.
 
-    module.exports = class MicroAjax
+    define ->
+        class MicroAjax
 
 constructor
 -----------
@@ -20,30 +21,30 @@ request with a body if `postBody` contains anything. Otherwise we set the reques
 
 Finally we send the request.
 
-        constructor:  ( @url, @callbackFunction ) ->
-            @postBody = arguments[2] || ""
-            @request = @getRequest()
+            constructor:  ( @url, @callbackFunction ) ->
+                @postBody = arguments[2] || ""
+                @request = @getRequest()
 
-            if @request
-                @request.onreadystatechange = @stateChange
+                if @request
+                    @request.onreadystatechange = @stateChange
 
-                if @postBody isnt ""
-                    @request.open "POST", @url, true
-                    @request.setRequestHeader 'X-Requested-With', 'XMLHttpRequest'
-                    @request.setRequestHeader 'Content-type', 'application/x-www-form-urlencoded'
-                    @request.setRequestHeader 'Connection', 'close'
-                else
-                    @request.open "GET", @url, true
+                    if @postBody isnt ""
+                        @request.open "POST", @url, true
+                        @request.setRequestHeader 'X-Requested-With', 'XMLHttpRequest'
+                        @request.setRequestHeader 'Content-type', 'application/x-www-form-urlencoded'
+                        @request.setRequestHeader 'Connection', 'close'
+                    else
+                        @request.open "GET", @url, true
 
-                @request.send @postBody
+                    @request.send @postBody
 
 stateChange
 -----------
 The only state we are interested in here is when `readyState` is `DONE` which is indicated by the value 4. When this
 state is reached we call the `callbackFunction` and passes the requests response text.
 
-        stateChange: ( object ) =>
-            @callbackFunction @request.responseText if @request.readyState == 4
+            stateChange: ( object ) =>
+                @callbackFunction @request.responseText if @request.readyState == 4
 
 getRequest
 ----------
@@ -51,10 +52,10 @@ Different browsers have differently named objects for HTTP requests. MS us `Acti
 we care about use `XMLHttpRequest`. If neither is found we return false to indicate that we can't do a remote request.
 When the correct request object is found we create an instance of it and returns it.
 
-        getRequest: ->
-            return new ActiveXObject 'Microsoft.XMLHTTP' if window.ActiveXObject
-            return new XMLHttpRequest if window.XMLHttpRequest
-            return false
+            getRequest: ->
+                return new ActiveXObject 'Microsoft.XMLHTTP' if window.ActiveXObject
+                return new XMLHttpRequest if window.XMLHttpRequest
+                return false
 
 Copyright
 ---------

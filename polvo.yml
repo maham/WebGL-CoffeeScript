@@ -11,6 +11,5 @@ output:
 
 alias:
   app: ./src/app
-  lib: ./src/lib
 
 boot: ./src/app/app

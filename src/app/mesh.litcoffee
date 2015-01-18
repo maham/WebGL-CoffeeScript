@@ -1,7 +1,8 @@
 Mesh
 ====
 
-	module.exports = class Mesh
-		constructor: ( settings ) ->
-			for own key, value of settings
-				@[key] = value
+	define ->
+    	class Mesh
+        	constructor: ( settings ) ->
+            	for own key, value of settings
+                	@[key] = value

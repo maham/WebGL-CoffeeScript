@@ -9,7 +9,8 @@ normals, a list of texels and a list of faces. Those can then be used to create 
 _**WARNING** Only a subset of the specification is supported at the moment and there is no proper handling of
 unsupported lines._
 
-	module.exports = class ObjParser
+    define ->
+        class ObjParser
 
 
 constructor
@@ -19,10 +20,10 @@ vertices, the texels and the normals. `out` is an array of arrays. The arrays wi
 texels and normals. `indices` is an array containing the indices for the index list sent to WebGL. Currently we don't
 try to reuse any vertices so the indices will each point to its own vertex.
 
-		constructor: ->
-			@parsed			= [[],[],[]]
-			@out			= []
-			@indices		= []
+            constructor: ->
+                @parsed         = [[],[],[]]
+                @out            = []
+                @indices        = []
 
 parse
 -----
@@ -32,26 +33,26 @@ line. After trimming the whitespace from the beginning and the end of the line i
 first token can then be used as the method name to call because of how JavaScript objects works. The remainder of the
 array is then passed in as the methods arguments.
 
-		parse: ( objData ) ->
-			for line in objData.split '\n'
-				continue if ( line.charAt 0 ) == '#' or line.length < 1
-				tokens = line.trim().split /\s+/
+            parse: ( objData ) ->
+                for line in objData.split '\n'
+                    continue if ( line.charAt 0 ) == '#' or line.length < 1
+                    tokens = line.trim().split /\s+/
 
-				@[tokens[0]].apply @, tokens[1..] if @[tokens[0]]
-			return
+                    @[tokens[0]].apply @, tokens[1..] if @[tokens[0]]
+                return
 
 v &nbsp;
 --------
 A vertex is created from three components, `x, y, z`. The .obj specification allows for a fourth `w` component which is
 ignored here. The arguments are parsed as floats, packed into an array and pushed into the first `parsed` array.
 
-		v: ( x, y, z ) ->
-			@parsed[0].push	[
-				parseFloat x
-				parseFloat y
-				parseFloat z
-			]
-			return
+            v: ( x, y, z ) ->
+                @parsed[0].push [
+                    parseFloat x
+                    parseFloat y
+                    parseFloat z
+                ]
+                return
 
 vt &nbsp;
 ---------
@@ -59,25 +60,25 @@ A texel, texture coordinate, is created from two components, `u, v`. The .obj sp
 component which is ignored here. The arguments are parsed as floats, packed into an array and pushed into the third
 `parsed` array.
 
-		vt: ( u, v ) ->
-			@parsed[2].push [
-				parseFloat u
-				parseFloat v
-			]
-			return
+            vt: ( u, v ) ->
+                @parsed[2].push [
+                    parseFloat u
+                    parseFloat v
+                ]
+                return
 
 vn &nbsp;
 ---------
 A normal is created from three components, `i, j, k`. The arguments are parsed as floats, packed into an array and
 pushed into the second `parsed` array.
 
-		vn: ( i, j, k ) ->
-			@parsed[1].push [
-				parseFloat i
-				parseFloat j
-				parseFloat k
-			]
-			return
+            vn: ( i, j, k ) ->
+                @parsed[1].push [
+                    parseFloat i
+                    parseFloat j
+                    parseFloat k
+                ]
+                return
 
 f &nbsp;
 --------
@@ -105,19 +106,19 @@ vertex data. The `out` array needs to be a flat array to play well with the WebG
 new vertex for every vertex and thus the index will always point to the last vertex. If we add code to reuse vertices
 then this will have to be changed to indicate the index of the 'reused' vertex if one is found.
 
-		f: ( indices... ) ->
-			for currentIndex in [0...indices.length]
-				components = indices[currentIndex].split '/'
-				for currentComponentIndex in [0...components.length]
-					continue if currentComponentIndex > 0
-					index = parseInt components[currentComponentIndex]
-					if index > 0
-						parsedIndex = index - 1
-					else
-						parsedIndex = @parsed[currentComponentIndex].length + index
-					@out.push.apply @out, @parsed[currentComponentIndex][parsedIndex]
-				@indices.push @indices.length
-			return
+            f: ( indices... ) ->
+                for currentIndex in [0...indices.length]
+                    components = indices[currentIndex].split '/'
+                    for currentComponentIndex in [0...components.length]
+                        continue if currentComponentIndex > 0
+                        index = parseInt components[currentComponentIndex]
+                        if index > 0
+                            parsedIndex = index - 1
+                        else
+                            parsedIndex = @parsed[currentComponentIndex].length + index
+                        @out.push.apply @out, @parsed[currentComponentIndex][parsedIndex]
+                    @indices.push @indices.length
+                return
 
 <!-- Sorry for the non breaking spaces I have added to some of the method headers. They are there as the markdown parser
 really don't like one char headers if I'm using the hyphen H2 markdown. But I still want it instead of the hash version

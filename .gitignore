@@ -1,5 +1,6 @@
 .DS_Store
 
 public/docco
-public/app.js
-public/app.css
+public/app/
+
+node_modules/
