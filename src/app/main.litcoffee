@@ -16,10 +16,12 @@ our ingame viewpoint.
         'app/assetloader'
         'app/game'
         'app/camera'
+        'app/input'
     ], (
         AssetLoader
         Game
         Camera
+        Input
     ) ->
 
 Start the application
@@ -66,4 +68,16 @@ in motion.
                 cube = game.addMesh cubeData
                 cube.position[0] = 2
                 game.setCamera new Camera [0, 0, 7], [0, 0, 0]
+
+                input = new Input aCanvasElementId
+                input.on 'MouseDown', ( anEvent ) ->
+                    cube.position[0] += 1
+
+                input.on 'MouseUp', ( anEvent ) ->
+                    cube.position[0] -= 1
+
+                input.on 'MouseMove', ( anEvent, data ) ->
+                    capsule.rotation[1] += data.deltaX
+                    capsule.rotation[0] += data.deltaY
+
                 game.start()

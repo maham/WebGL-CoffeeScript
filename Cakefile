@@ -1,7 +1,6 @@
 colors = require 'colors'
 fs     = require 'fs'
 {exec} = require 'child_process'
-{Spinner} = require 'clui'
 
 source_directory = 'src/app'
 output_directory = 'public/js/app'
