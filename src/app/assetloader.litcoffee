@@ -24,28 +24,28 @@ assets are loaded is done by counting the URL/name pairs and then decrease this 
 call to @loadAsset is made for each URL.
 
             constructor: ( assetUrls, @callbackFunction ) ->
-                @assets = {}
-                @numIncompleteAssets = ( Object.keys assetUrls ).length
+                @assets = []
+                @numIncompleteAssets = assetUrls.length
 
-                for currentAssetName, currentAssetUrl of assetUrls
-                    @loadAsset currentAssetUrl, currentAssetName
+                for currentAssetUrl, currentUrlIndex in assetUrls
+                    @loadAsset currentAssetUrl, currentUrlIndex
 
 loadAsset
 ---------
 Loading of assets is done using MicroAjax. On completion the loaded resource and the name passed to loadAsset is sent to
 onAssetLoaded.
 
-            loadAsset: ( assetUrl, assetName ) ->
-                new MicroAjax assetUrl, ( resource ) ->
-                    @onAssetLoaded resource, assetName
+            loadAsset: ( assetUrl, assetIndex ) ->
+                new MicroAjax assetUrl, ( resource ) =>
+                    @onAssetLoaded resource, assetIndex
 
 onAssetLoaded
 -------------
 A finished asset is stored in @assets with the asset name as the key. The number of incomplete assets are decreased and
 if this value reaches zero the callback function from the constructor is called.
 
-            onAssetLoaded: ( resource, assetName ) ->
-                @assets[assetName] = resource
+            onAssetLoaded: ( resource, assetIndex ) ->
+                @assets[assetIndex] = resource
                 @numIncompleteAssets--
 
                 @callbackFunction @assets if @numIncompleteAssets <= 0
