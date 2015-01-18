@@ -1,46 +1,47 @@
+colors = require 'colors'
 fs     = require 'fs'
 {exec} = require 'child_process'
+{Spinner} = require 'clui'
 
-appFiles  = [
-    # omit src/ and .coffee to make the below lines a little shorter
-    'app'
-    'assetloader'
-    'camera'
-    'game'
-    'gl'
-    'glmath'
-    'mesh'
-    'metronome'
-    'microajax'
-    'microevent'
-    'objparser'
-    'time'
-]
+source_directory = 'src/app'
+output_directory = 'public/js/app'
 
-joined_file = 'app.litcoffee'
-output_directory = 'public/'
+# watch
+# -----
+#
+# This will compile the source and start watching for changes until cancelled.
+task 'watch', 'Compile the source and start watching for changes.', ->
+    console.log "Watching '#{source_directory}' for changes."
+    watch_process = exec "coffee --output #{output_directory} --watch #{source_directory}", (err, stdout, stderr) ->
+        if err
+            console.log 'Something went wrong...'.red
+            throw err
 
-task 'build', 'Build single application file from source files', ->
-    appContents = new Array remaining = appFiles.length
-    for file, index in appFiles then do (file, index) ->
-        fs.readFile "src/app/#{file}.litcoffee", 'utf8', (err, fileContents) ->
-            if err
-                console.log "Failed to read a file."
-                throw err
-            appContents[index] = fileContents
-            process() if --remaining is 0
-    process = ->
-        fs.writeFile joined_file, appContents.join('\n\n'), 'utf8', (err) ->
-            if err
-                console.log "Failed to join files."
-                throw err
-            exec "coffee --output #{output_directory} --compile #{joined_file}", (err, stdout, stderr) ->
-                if err
-                    console.log "Failed to compile joined file."
-                    throw err
-                console.log stdout + stderr
-                fs.unlink joined_file, (err) ->
-                    if err
-                        console.log "Failed to delete joined file."
-                        throw err
-                    console.log 'Done.'
+    watch_process.stdout.on 'data', ( data ) ->
+        console.log "stdout: #{data}".green
+
+    watch_process.stderr.on 'data', ( data ) ->
+        console.log "stderr: #{data}".red
+
+    watch_process.on 'close', ( code ) ->
+        console.log "Exited with code: #{code}".green
+
+# server
+# ------
+#
+# This will start a really simple web server serving the contents of the public/ directory.
+task 'server', 'Start a simple web server.', ->
+    console.log 'Starting server'.green
+    server_process = exec 'coffee server/server.litcoffee', (err, stdout, stderr) ->
+        if err
+            console.log 'Something went wrong...'.red
+            throw err
+
+    server_process.stdout.on 'data', ( data ) ->
+        console.log "stdout: #{data}".green
+
+    server_process.stderr.on 'data', ( data ) ->
+        console.log "stderr: #{data}".red
+
+    server_process.on 'close', ( code ) ->
+        console.log "Exited with code: #{code}".green

@@ -1,23 +1,25 @@
 {
-    "name": "WebGL-CoffeeScript",
-    "version": "1.0.0",
-    "description": "WebGL with litcoffee",
-    "main": "app.js",
-    "dependencies": {
-        "express": "^4.11.0"
-    },
-    "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
-        "start": "coffee server/server.litcoffee"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/maham/WebGL-CoffeeScript.git"
-    },
-    "author": "Martin Hammarbrink",
-    "license": "ISC",
-    "bugs": {
-        "url": "https://github.com/maham/WebGL-CoffeeScript/issues"
-    },
-    "homepage": "https://github.com/maham/WebGL-CoffeeScript"
+  "name": "WebGL-CoffeeScript",
+  "version": "1.0.0",
+  "description": "WebGL with litcoffee",
+  "main": "app.js",
+  "dependencies": {
+    "clui": "^0.3.1",
+    "colors": "^1.0.3",
+    "express": "^4.11.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "coffee server/server.litcoffee"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maham/WebGL-CoffeeScript.git"
+  },
+  "author": "Martin Hammarbrink",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/maham/WebGL-CoffeeScript/issues"
+  },
+  "homepage": "https://github.com/maham/WebGL-CoffeeScript"
 }
