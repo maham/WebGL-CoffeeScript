@@ -1,8 +1,12 @@
 Game
 ====
 Some kind of central point of orgainization will be needed. It's game technology we are doing so let us call what we
-are doing a game. We will need a couple of helpers for this. We will need the [Metronome](metronome.litcoffee) to keep
-the pace going.
+are doing a game.
+
+Dependencies
+------------
+We will need a couple of helpers for this. We will need the [Metronome](metronome.litcoffee) to keep
+the pace going. Then we use [GL](gl.litcoffee) as the interface towards WebGL.
 
     define [
         'app/metronome'
@@ -11,12 +15,10 @@ the pace going.
         Metronome
         GL
     ) ->
-
-We will create game as a class. The class won't have any instances but it's still a very nice way of organizing data
-and methods.
-
         class Game
 
+constructor
+-----------
 Before starting the game loop we need to know a few things about the game. The FPS is the number of frames that we will
 lock the game to and we will need a couple of shaders for the rendering.
 
@@ -28,11 +30,16 @@ lock the game to and we will need a couple of shaders for the rendering.
                 shader = @gl.createShaderProgram fragmentShaderSource, vertexShaderSource
                 @gl.setShader shader
 
+setCamera
+---------
 If we want to render something we will also need to know from what viewpoint we should render it. This is done using a
 [Camera](camera.litcoffee).
 
             setCamera: ( @camera ) ->
+                return @camera
 
+addMesh
+-------
 We also need something to render. Let us add a method of adding meshes to the game. This will change into some kind of
 scene in the future but just an array of meshes will have to do for now.
 
@@ -42,6 +49,8 @@ scene in the future but just an array of meshes will have to do for now.
                 @meshes.push newMesh
                 return newMesh
 
+loop
+----
 This is the main game loop
 
             loop: =>
@@ -49,7 +58,15 @@ This is the main game loop
                 @gl.drawScene @camera, @meshes
                 return
 
+start
+-----
 And here we start the game
 
             start: ->
                 @metronome.start()
+
+                window.onblur = =>
+                    @metronome.stop()
+
+                window.onfocus = =>
+                    @metronome.start()

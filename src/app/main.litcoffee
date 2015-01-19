@@ -67,17 +67,17 @@ in motion.
                 capsule.position[0] = -2
                 cube = game.addMesh cubeData
                 cube.position[0] = 2
-                game.setCamera new Camera [0, 0, 7], [0, 0, 0]
+                camera = game.setCamera new Camera [0, 0, 7], [0, 0, 0]
 
                 input = new Input aCanvasElementId
                 input.on 'MouseDown', ( anEvent ) ->
-                    cube.position[0] += 1
+                    camera.position[0] += 5
 
                 input.on 'MouseUp', ( anEvent ) ->
-                    cube.position[0] -= 1
+                    camera.position[0] -= 5
 
                 input.on 'MouseMove', ( anEvent, data ) ->
-                    capsule.rotation[1] += data.deltaX
-                    capsule.rotation[0] += data.deltaY
+                    cube.rotation[1] += data.deltaX
+                    cube.rotation[0] += data.deltaY
 
                 game.start()

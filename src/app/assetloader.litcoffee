@@ -1,3 +1,6 @@
+AssetLoader
+===========
+The AssetLoader can load a list of assets and call back on completion.
 
 Dependencies
 ------------
@@ -8,12 +11,6 @@ AssetLoader will utilise MicroAjax to take care of async loading of resources.
     ], (
         MicroAjax
     ) ->
-
-AssetLoader
------------
-The AssetLoader will help with loading assets and calling an appropriate method when the loading of all the assets is
-complete.
-
         class AssetLoader
 
 constructor
