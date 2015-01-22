@@ -69,15 +69,22 @@ in motion.
                 cube.position[0] = 2
                 camera = game.setCamera new Camera [0, 0, 7], [0, 0, 0]
 
+                mouseDown = false
                 input = new Input aCanvasElementId
                 input.on 'MouseDown', ( anEvent ) ->
                     camera.position[0] += 5
+                    mouseDown = true
 
                 input.on 'MouseUp', ( anEvent ) ->
                     camera.position[0] -= 5
+                    mouseDown = false
 
                 input.on 'MouseMove', ( anEvent, data ) ->
-                    cube.rotation[1] += data.deltaX
-                    cube.rotation[0] += data.deltaY
+                    if mouseDown
+                        cube.rotation[1] += data.deltaX
+                        cube.rotation[0] += data.deltaY
+                    else
+                        capsule.rotation[1] += data.deltaX
+                        capsule.rotation[0] += data.deltaY
 
                 game.start()

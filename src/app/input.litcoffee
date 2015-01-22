@@ -18,37 +18,56 @@ The Input class spits out events that can be observed and acted upon.
 
         class Input
             constructor: ( aCanvasElementID ) ->
-                canvasElement = document.getElementById aCanvasElementID
+                @canvasElement = document.getElementById aCanvasElementID
 
-                canvasElement.onmousedown = ( anEvent ) => @onMouseDown anEvent
-                document.onmouseup = ( anEvent ) => @onMouseUp anEvent
-                document.onmousemove = ( anEvent ) => @onMouseMove anEvent
+                @mouseMoveHandler = ( anEvent ) => @onMouseMove anEvent
+                @mouseDownHandler = ( anEvent ) => @onMouseDown anEvent
+                @mouseUpHandler = ( anEvent ) => @onMouseUp anEvent
+                @mouseEnterHandler = ( anEvent ) =>
+                    @_lastMouseX = anEvent.clientX
+                    @_lastMouseY = anEvent.clientY
+
+                    @canvasElement.removeEventListener 'mouseenter', @mouseEnterHandler
+
+                @canvasElement.addEventListener 'mousemove', @mouseMoveHandler
+                @canvasElement.addEventListener 'mousedown', @mouseDownHandler
+                @canvasElement.addEventListener 'mouseenter', @mouseEnterHandler
 
 onMouseDown
 -----------
-When a mouse button is depressed it's time to start paying attention to mouse position updates. This setup is only valid
-as long as we only care about mouse moves while a button is pressed.
+A `MouseDown` event is emitted when a mouse button is pressed while inside the canvas element. To make sure that a mouse
+move can be followed outside the canvas the `mouseMoveHandler` is moved to the document. This makes sure that for
+example drags can continue outside the element borders. The `mouseUpHandler` is also registered here. The reason for not
+registering it until after a mouse down event is so that it won't trigger unless it happens inside the canvas element.
 
             onMouseDown: ( anEvent ) ->
-                @mouseDown = true
-                @_lastMouseX = anEvent.clientX
-                @_lastMouseY = anEvent.clientY
+                @canvasElement.removeEventListener 'mousemove', @mouseMoveHandler
+                document.addEventListener 'mousemove', @mouseMoveHandler
+
+                document.addEventListener 'mouseup', @mouseUpHandler
+
                 @emit 'MouseDown', @
 
 onMouseUp
 ---------
-On releasing the mouse button a `MouseUp` event is emitted.
+On releasing the mouse button a `MouseUp` event is emitted. The `mouseMoveHandler` is moved out from the canvas element
+to the document. Finally the `mouseUpHandler` is removed since mouse up events outside the canvas isn't relevant any
+more.
 
             onMouseUp: ( anEvent ) ->
-                @mouseDown = false
+                document.removeEventListener 'mousemove', @mouseMoveHandler
+                @canvasElement.addEventListener 'mousemove', @mouseMoveHandler
+
+                document.removeEventListener 'mouseup', @mouseUpHandler
+                
                 @emit 'MouseUp', @
 
 onMouseMove
 -----------
+Mouse move events are sent when the mouse pass over the canvas element or, if the mouse button was pressed inside the
+canvas, until the mouse button is released.
 
             onMouseMove: ( anEvent ) ->
-                return unless @mouseDown
-
                 @mouseX = anEvent.clientX
                 @mouseY = anEvent.clientY
                 @deltaX = @mouseX - @_lastMouseX
