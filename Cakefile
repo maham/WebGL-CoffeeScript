@@ -5,6 +5,26 @@ fs     = require 'fs'
 source_directory = 'src/app'
 output_directory = 'public/js/app'
 
+# compile
+# -----
+#
+# This will compile the source.
+task 'compile', 'Compile the source.', ->
+    console.log "Compiling '#{source_directory}'."
+    compile_process = exec "coffee --output #{output_directory} --compile #{source_directory}", (err, stdout, stderr) ->
+        if err
+            console.log 'Something went wrong...'.red
+            throw err
+
+    compile_process.stdout.on 'data', ( data ) ->
+        console.log "stdout: #{data}".green
+
+    compile_process.stderr.on 'data', ( data ) ->
+        console.log "stderr: #{data}".red
+
+    compile_process.on 'close', ( code ) ->
+        console.log "Exited with code: #{code}".green
+
 # watch
 # -----
 #
