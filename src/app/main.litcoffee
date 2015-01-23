@@ -67,6 +67,7 @@ in motion.
                 capsule.position[0] = -2
                 cube = game.addMesh cubeData
                 cube.position[0] = 2
+                cube.position[2] = 2
                 camera = game.setCamera new Camera [0, 0, 7], [0, 0, 0]
 
                 mouseDown = false
@@ -84,7 +85,7 @@ in motion.
                         cube.rotation[1] += data.deltaX
                         cube.rotation[0] += data.deltaY
                     else
-                        capsule.rotation[1] += data.deltaX
-                        capsule.rotation[0] += data.deltaY
+                       capsule.rotation[1] += data.deltaX
+                       capsule.rotation[0] += data.deltaY
 
                 game.start()
