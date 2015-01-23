@@ -146,8 +146,16 @@ shader. The references are stored in the shader program object.
                 @_gl.useProgram @_shaderProgram
 
                 @_shaderProgram.vertexPositionAttribute = @_gl.getAttribLocation @_shaderProgram, 'aVertexPosition'
-                throw Error 'Failed to get reference to "aVertexPosition" in shader program.' unless @_shaderProgram.vertexPositionAttribute?
+                throw Error 'Failed to get reference to "aVertexPosition" in shader program.' unless @_shaderProgram.vertexPositionAttribute >= 0
                 @_gl.enableVertexAttribArray @_shaderProgram.vertexPositionAttribute
+
+                @_shaderProgram.normalAttribute = @_gl.getAttribLocation @_shaderProgram, 'aNormal'
+                throw Error 'Failed to get reference to "aNormal" in shader program.' unless @_shaderProgram.normalAttribute >= 0
+                @_gl.enableVertexAttribArray @_shaderProgram.normalAttribute
+
+                @_shaderProgram.texelPositionAttribute = @_gl.getAttribLocation @_shaderProgram, 'aTexelPosition'
+                throw Error 'Failed to get reference to "aTexelPosition" in shader program.' unless @_shaderProgram.texelPositionAttribute >= 0
+                @_gl.enableVertexAttribArray @_shaderProgram.texelPositionAttribute
 
                 #@_shaderProgram.pMatrixUniform = @_gl.getUniformLocation @_shaderProgram, 'uPMatrix'
                 #throw Error 'Failed to get reference to "uPMatrix" in shader program.' unless @_shaderProgram.pMatrixUniform?
@@ -238,7 +246,9 @@ Then for each mesh, push the correct buffers to GL.
 
                 for mesh in meshes
                     @_gl.bindBuffer @_gl.ARRAY_BUFFER, mesh.vertexBuffer
-                    @_gl.vertexAttribPointer @_shaderProgram.vertexPositionAttribute, mesh.vertexSize, @_gl.FLOAT, false, 0, 0
+                    @_gl.vertexAttribPointer @_shaderProgram.vertexPositionAttribute, 3, @_gl.FLOAT, false, 32, 0
+                    @_gl.vertexAttribPointer @_shaderProgram.normalAttribute, 3, @_gl.FLOAT, false, 32, 12
+                    @_gl.vertexAttribPointer @_shaderProgram.texelPositionAttribute, 2, @_gl.FLOAT, false, 32, 24
                     @_gl.bindBuffer @_gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer
 
 Create a model matrix representing the translation and rotation of the object. Multiply the model matrix with the view

@@ -24,6 +24,8 @@ try to reuse any vertices so the indices will each point to its own vertex.
                 @parsed         = [[],[],[]]
                 @out            = []
                 @indices        = []
+                @counter        = {v: 0, vt: 0, vn: 0, f: 0}
+                @parsedFaceVertices = 0;
 
 parse
 -----
@@ -39,6 +41,13 @@ array is then passed in as the methods arguments.
                     tokens = line.trim().split /\s+/
 
                     @[tokens[0]].apply @, tokens[1..] if @[tokens[0]]
+                    @counter[tokens[0]]++
+
+                console.log """Parsed #{@counter['v']} vertices,
+                    #{@counter['vt']} texels,
+                    #{@counter['vn']} normals and
+                    #{@counter['f']} faces.
+                    """
                 return
 
 v &nbsp;
@@ -61,7 +70,7 @@ component which is ignored here. The arguments are parsed as floats, packed into
 `parsed` array.
 
             vt: ( u, v ) ->
-                @parsed[2].push [
+                @parsed[1].push [
                     parseFloat u
                     parseFloat v
                 ]
@@ -73,7 +82,7 @@ A normal is created from three components, `i, j, k`. The arguments are parsed a
 pushed into the second `parsed` array.
 
             vn: ( i, j, k ) ->
-                @parsed[1].push [
+                @parsed[2].push [
                     parseFloat i
                     parseFloat j
                     parseFloat k
@@ -107,15 +116,17 @@ new vertex for every vertex and thus the index will always point to the last ver
 then this will have to be changed to indicate the index of the 'reused' vertex if one is found.
 
             f: ( indices... ) ->
+                @parsedFaceVertices += indices.length
+
                 for currentIndex in [0...indices.length]
                     components = indices[currentIndex].split '/'
                     for currentComponentIndex in [0...components.length]
-                        continue if currentComponentIndex > 0
                         index = parseInt components[currentComponentIndex]
                         if index > 0
                             parsedIndex = index - 1
                         else
                             parsedIndex = @parsed[currentComponentIndex].length + index
+
                         @out.push.apply @out, @parsed[currentComponentIndex][parsedIndex]
                     @indices.push @indices.length
                 return
