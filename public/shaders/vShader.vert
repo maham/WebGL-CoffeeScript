@@ -1,15 +1,15 @@
 attribute vec3 aVertexPosition;
-attribute vec3 aNormal;
-attribute vec2 aTexelPosition;
+attribute vec3 aVertexNormal;
+attribute vec2 aTextureCoordinate;
 
 uniform mat4 uMVMatrix;
 
-varying vec3 vNormal;
-varying vec2 vTexelPosition;
+varying vec3 vVertexNormal;
+varying vec2 vTextureCoordinate;
 
 void main( void )
 {
 	gl_Position = uMVMatrix * vec4( aVertexPosition, 1.0 );
-	vNormal = aNormal;
-	vTexelPosition = aTexelPosition;
+	vVertexNormal = aVertexNormal;
+	vTextureCoordinate = aTextureCoordinate;
 }

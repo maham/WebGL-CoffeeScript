@@ -27,7 +27,7 @@ lock the game to and we will need a couple of shaders for the rendering.
                 @metronome.on "Tick", @loop
                 @gl = new GL canvasElementID
 
-                shader = @gl.createShaderProgram fragmentShaderSource, vertexShaderSource
+                shader = @gl.createShader fragmentShaderSource, vertexShaderSource
                 @gl.setShader shader
 
 setCamera

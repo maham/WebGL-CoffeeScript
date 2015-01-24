@@ -15,16 +15,10 @@ structures convenient for creating meshes we use the ObjParser which can parse s
         Mesh
         ObjParser
     ) ->
-
-GL
---
-First we need the class itself. I will call it GL at the moment and see if that sticks.
-
         class GL
 
 constructor
 -----------
-
 The constructor need the element id of the canvas element where we will initialize the WebGL context. The view matrix
 the projection matrix and the matrix stack are also initialized here.
 
@@ -43,7 +37,7 @@ know why the program halted.
                 try
                     @_gl = canvasElement.getContext 'webgl' || canvasElement.getContext 'experimental-webgl'
                 catch error
-                    console.log 'Failed to initialize WebGL using the element ' + canvas + '. Error:\n' + error
+                    console.log "Failed to initialize WebGL using the element #{canvas}. Error:\n#{error}"
                     throw error
 
 Tack the physical dimensions of the element onto the gl context. We need them to be able to specify the viewport later.
@@ -59,10 +53,25 @@ Clear the buffer, enable depth testing and enable backface culling.
                 @_gl.enable @_gl.DEPTH_TEST
                 @_gl.enable @_gl.CULL_FACE
 
+createTexture
+-------------
+
+            createTexture: ( anImageUrl ) ->
+                newTexture = @_gl.createTexture()
+                newTexture.image = new Image()
+                newTexture.image.onload = =>
+                    @_gl.bindTexture @_gl.TEXTURE_2D, newTexture
+                    @_gl.pixelStorei @_gl.UNPACK_FLIP_Y_WEBGL, true
+                    @_gl.textImage2D @_gl.TEXTURE_2D, 0, @_gl.RGBA, @_gl.RGBA, @_gl.UNSIGNED_BYTE, newTexture.image
+                    @_gl.texParameteri @_gl.TEXTURE_2D, @_gl.TEXTURE_MAG_FILTER, @_gl.NEAREST
+                    @_gl.texParameteri @_gl.TEXTURE_2D, @_gl.TEXTURE_MIN_FILTER, @_gl.NEAREST
+                    @_gl.bindTexture @_gl.TEXTURE_2D, null
+
+                newTexture.image.src = anImageUrl
+                return newTexture
 
 fetchShaderFromElement
 ----------------------
-
 Shaders can be located inside a `<script>` tag in the HTML. This method parses an element specified by its id.
 
             fetchShaderFromElement: ( shaderElementId ) ->
@@ -90,82 +99,75 @@ later.
 
 compileShader
 -------------
+To use the shaders they will have to be compiled. Shaders for WebGL is written in [GLSL](https://www.khronos.org/webgl/ 
+"More info found here."). Pre-compiled shaders are quite unlikely to appear in WebGL as it's really a program running on
+the graphics card and it would raise some security concerns.
+A new shader is created by calling `createShader` while specifying what type of shader to create. The shader source is
+then inserted into the new shader and the shader is compiled. To make sure that the compilation was successful the
+`COMPILE_STATUS` parameter of the shader is checked. Unless it's true the shader didn't compile correctly and and
+exception containing the shader log is thrown. If everything went fine the shader is passed back as the return value.
 
-To use the shaders they will have to be compiled. The first parameter is a string containing the GLSL code and the
-second parameter will give the type of shader to create. Currently there is no mechanism to match the shader code to
-the shader type. Extracting a shader class from this is probably the way to go. Later...
+            compileShader: ( someShaderCode, aShaderType ) ->
+                newShader = @_gl.createShader aShaderType
 
-            compileShader: ( shaderCode, shaderType ) ->
-                shader = @_gl.createShader shaderType
-
-                @_gl.shaderSource shader, shaderCode
-                @_gl.compileShader shader
-
-After compilation we can check the compile status parameter of the shader to make sure everything went all right.
-Otherwise we throw an exception as there is currently no real point in continuing execution if a shader compilation
-fails.
+                @_gl.shaderSource newShader, someShaderCode
+                @_gl.compileShader newShader
 
                 unless @_gl.getShaderParameter shader, @_gl.COMPILE_STATUS
-                    throw new Error @_gl.getShaderInfoLog
+                    throw new Error "Error while compiling #{shaderType} shader: #{@_gl.getShaderInfoLog shader}"
 
                 return shader
 
-initShaders
------------
-
-This method takes care of loading and compiling the fragment and vertex shaders.
-
-            initShaders: ( fragmentShaderElementId, vertexShaderElementId ) ->
-                @_fragmentShader = @compileShader ( @fetchShaderFromElement fragmentShaderElementId ), @_gl.FRAGMENT_SHADER
-                @_vertexShader = @compileShader ( @fetchShaderFromElement vertexShaderElementId ), @_gl.VERTEX_SHADER
-
-createShaderProgram
--------------------
-
+createShader
+------------
 Here we combine the fragment and vertex shader into a shader program. This is done by first creating the shader program
 itself, attaching the shaders to it and last linking the program. Failure to link will result in an exception.
 
-            createShaderProgram: ( fragmentShaderSource, vertexShaderSource ) ->
+            createShader: ( fragmentShaderSource, vertexShaderSource ) ->
                 shaderProgram = @_gl.createProgram()
                 @_gl.attachShader shaderProgram, @compileShader fragmentShaderSource, @_gl.FRAGMENT_SHADER
                 @_gl.attachShader shaderProgram, @compileShader vertexShaderSource, @_gl.VERTEX_SHADER
 
                 @_gl.linkProgram shaderProgram
                 unless @_gl.getProgramParameter shaderProgram, @_gl.LINK_STATUS
-                    throw new Error 'Could not initialize shaders.'
+                    throw new Error "Failed to link shader: #{@_gl.getProgramInfoLog shaderProgram}"
 
                 return shaderProgram
 
-setShader
----------
+initShader
+----------
+To connect the shader and the attributes used therein `getAttribLocation` is called. The shader and the name of the
+attribute is passed in to the function and if the attribute is found in the shader an index to the attribute is
+returned and stored as a property of the shader program. If the attribute isn't found -1 is returned. In this case the
+corresponding variable is set to null to highlight this. This way the renderer can detect this.
 
-Set the shader program to use for rendering and get references to the variables that's needed to interact with the
-shader. The references are stored in the shader program object.
+            initShader: ( aShaderProgram ) ->
+                aShaderProgram.vertexPositionAttribute = @_gl.getAttribLocation aShaderProgram, 'aVertexPosition'
+                if aShaderProgram.vertexPositionAttribute >= 0
+                    @_gl.enableVertexAttribArray aShaderProgram.vertexPositionAttribute
+                else
+                    aShaderProgram.vertexPositionAttribute = null
 
-            setShader: ( @_shaderProgram ) ->
-                @_gl.useProgram @_shaderProgram
+                aShaderProgram.vertexNormalAttribute = @_gl.getAttribLocation aShaderProgram, 'aVertexNormal'
+                if aShaderProgram.vertexNormalAttribute >= 0
+                    @_gl.enableVertexAttribArray aShaderProgram.vertexNormalAttribute
+                else
+                    aShaderProgram.vertexNormalAttribute = null
 
-                @_shaderProgram.vertexPositionAttribute = @_gl.getAttribLocation @_shaderProgram, 'aVertexPosition'
-                throw Error 'Failed to get reference to "aVertexPosition" in shader program.' unless @_shaderProgram.vertexPositionAttribute >= 0
-                @_gl.enableVertexAttribArray @_shaderProgram.vertexPositionAttribute
+                aShaderProgram.textureCoordinateAttribute = @_gl.getAttribLocation aShaderProgram, 'aTextureCoordinate'
+                if aShaderProgram.textureCoordinateAttribute >= 0
+                    @_gl.enableVertexAttribArray aShaderProgram.textureCoordinateAttribute
+                else
+                    aShaderProgram.textureCoordinateAttribute = null
+ 
+                #aShaderProgram.pMatrixUniform = @_gl.getUniformLocation aShaderProgram, 'uPMatrix'
+                #throw Error 'Failed to get reference to "uPMatrix" in shader program.' unless aShaderProgram.pMatrixUniform?
 
-                @_shaderProgram.normalAttribute = @_gl.getAttribLocation @_shaderProgram, 'aNormal'
-                throw Error 'Failed to get reference to "aNormal" in shader program.' unless @_shaderProgram.normalAttribute >= 0
-                @_gl.enableVertexAttribArray @_shaderProgram.normalAttribute
-
-                @_shaderProgram.texelPositionAttribute = @_gl.getAttribLocation @_shaderProgram, 'aTexelPosition'
-                throw Error 'Failed to get reference to "aTexelPosition" in shader program.' unless @_shaderProgram.texelPositionAttribute >= 0
-                @_gl.enableVertexAttribArray @_shaderProgram.texelPositionAttribute
-
-                #@_shaderProgram.pMatrixUniform = @_gl.getUniformLocation @_shaderProgram, 'uPMatrix'
-                #throw Error 'Failed to get reference to "uPMatrix" in shader program.' unless @_shaderProgram.pMatrixUniform?
-
-                @_shaderProgram.mvMatrixUniform = @_gl.getUniformLocation @_shaderProgram, 'uMVMatrix'
-                throw Error 'Failed to get reference to "uMVMatrix" in shader program.' unless @_shaderProgram.mvMatrixUniform?
+                aShaderProgram.mvMatrixUniform = @_gl.getUniformLocation aShaderProgram, 'uMVMatrix'
+                throw Error 'Failed to get reference to "uMVMatrix" in shader program.' unless aShaderProgram.mvMatrixUniform?
 
 createMesh
 ----------
-
 Utility to create a mesh.
 
             createMesh: ( settings ) ->
@@ -185,10 +187,10 @@ Utility to create a mesh.
                     numIndices:     settings.indices.length
                     position:       settings.position
                     rotation:       [0, 0, 0]
+                    shader:         @_shaderProgram
 
 createMeshFromObj
 -----------------
-
 Creates a mesh from a WaveFront .obj file.
 
             createMeshFromObj: ( objData, position ) ->
@@ -212,7 +214,6 @@ setMvMatrix
 
 pushMatrix
 ----------
-
 I'm using the matrix stack from the tutorial here. Another method might be used later.
 
             pushMatrix: ->
@@ -227,7 +228,6 @@ popMatrix
 
 deg2Rad
 -------
-
 A conversion of degrees to radians is needed
 
             deg2Rad: ( degrees ) ->
@@ -235,7 +235,6 @@ A conversion of degrees to radians is needed
 
 drawScene
 ---------
-
 To draw the scene we start by clearing the viewport and getting the view matrix from the camera.
 
             drawScene: ( camera, meshes ) ->
@@ -245,10 +244,11 @@ To draw the scene we start by clearing the viewport and getting the view matrix 
 Then for each mesh, push the correct buffers to GL.
 
                 for mesh in meshes
+                    @_gl.useProgram mesh.shader
                     @_gl.bindBuffer @_gl.ARRAY_BUFFER, mesh.vertexBuffer
-                    @_gl.vertexAttribPointer @_shaderProgram.vertexPositionAttribute, 3, @_gl.FLOAT, false, 32, 0
-                    @_gl.vertexAttribPointer @_shaderProgram.normalAttribute, 3, @_gl.FLOAT, false, 32, 12
-                    @_gl.vertexAttribPointer @_shaderProgram.texelPositionAttribute, 2, @_gl.FLOAT, false, 32, 24
+                    @_gl.vertexAttribPointer mesh.shader.vertexPositionAttribute, 3, @_gl.FLOAT, false, 32, 0 if mesh.shader.vertexPositionAttribute?
+                    @_gl.vertexAttribPointer mesh.shader.vertexNormalAttribute, 3, @_gl.FLOAT, false, 32, 12 if mesh.shader.vertexNormalAttribute?
+                    @_gl.vertexAttribPointer mesh.shader.textureCoordinateAttribute, 2, @_gl.FLOAT, false, 32, 24 if mesh.shader.textureCoordinateAttribute?
                     @_gl.bindBuffer @_gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer
 
 Create a model matrix representing the translation and rotation of the object. Multiply the model matrix with the view
@@ -261,7 +261,7 @@ matrix. Multiply that matrix with the projectionMatrix and pass it in to the sha
                     mat4.rotateZ modelMatrix, modelMatrix, ( @deg2Rad mesh.rotation[2] )
                     mat4.multiply modelMatrix, viewMatrix, modelMatrix
                     mat4.multiply modelMatrix, @_pMatrix, modelMatrix
-                    @_gl.uniformMatrix4fv @_shaderProgram.mvMatrixUniform, false, modelMatrix
+                    @_gl.uniformMatrix4fv mesh.shader.mvMatrixUniform, false, modelMatrix
 
 Finally draw the mesh as triangles.
 

@@ -1,6 +1,11 @@
 ObjParser
 =========
 
+ToDo
+----
+Some of this document needs to be updated to better explain the code and the thoughts behind it. More information on how
+.obj files work wouldn't hurt either.
+
 ObjParser
 ---------
 The ObjParser takes a string and parses it as a WaveFront .obj-file. It will create a list of vertices, a list of
