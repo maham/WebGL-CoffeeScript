@@ -97,29 +97,9 @@ later.
 
                 return shaderCode;
 
-compileShader
--------------
-To use the shaders they will have to be compiled. Shaders for WebGL is written in [GLSL](https://www.khronos.org/webgl/ 
-"More info found here."). Pre-compiled shaders are quite unlikely to appear in WebGL as it's really a program running on
-the graphics card and it would raise some security concerns.
-A new shader is created by calling `createShader` while specifying what type of shader to create. The shader source is
-then inserted into the new shader and the shader is compiled. To make sure that the compilation was successful the
-`COMPILE_STATUS` parameter of the shader is checked. Unless it's true the shader didn't compile correctly and and
-exception containing the shader log is thrown. If everything went fine the shader is passed back as the return value.
-
-            compileShader: ( someShaderCode, aShaderType ) ->
-                newShader = @_gl.createShader aShaderType
-
-                @_gl.shaderSource newShader, someShaderCode
-                @_gl.compileShader newShader
-
-                unless @_gl.getShaderParameter shader, @_gl.COMPILE_STATUS
-                    throw new Error "Error while compiling #{shaderType} shader: #{@_gl.getShaderInfoLog shader}"
-
-                return shader
-
 createShader
 ------------
+A shader program is the 
 Here we combine the fragment and vertex shader into a shader program. This is done by first creating the shader program
 itself, attaching the shaders to it and last linking the program. Failure to link will result in an exception.
 
@@ -134,12 +114,35 @@ itself, attaching the shaders to it and last linking the program. Failure to lin
 
                 return shaderProgram
 
+compileShader
+-------------
+_To use the shaders they will have to be compiled. Shaders for WebGL is written in [GLSL](https://www.khronos.org/webgl/ 
+"More info found here."). Pre-compiled shaders are quite unlikely to appear in WebGL as it's really a program running on
+the graphics card and it would raise some security concerns._
+
+A new shader is created by calling `gl.createShader` while specifying what type of shader to create. The shader source
+is inserted into the new shader by calling `gl.shaderSource` and the shader is compiled with `gl.compileShader`. To make
+sure that the compilation was successful the `gl.COMPILE_STATUS` parameter of the shader is checked by calling
+`gl.getShaderParameter`. Unless it returns true the shader didn't compile correctly and an exception containing the
+shader log is thrown. If everything went fine the shader is passed back as the return value.
+
+            compileShader: ( someShaderCode, aShaderType ) ->
+                newShader = @_gl.createShader aShaderType
+
+                @_gl.shaderSource newShader, someShaderCode
+                @_gl.compileShader newShader
+
+                unless @_gl.getShaderParameter shader, @_gl.COMPILE_STATUS
+                    throw new Error "Error while compiling #{shaderType} shader: #{@_gl.getShaderInfoLog shader}"
+
+                return shader
+
 initShader
 ----------
-To connect the shader and the attributes used therein `getAttribLocation` is called. The shader and the name of the
+To connect the shader and the attributes used therein `gl.getAttribLocation` is called. The shader and the name of the
 attribute is passed in to the function and if the attribute is found in the shader an index to the attribute is
 returned and stored as a property of the shader program. If the attribute isn't found -1 is returned. In this case the
-corresponding variable is set to null to highlight this. This way the renderer can detect this.
+corresponding variable is set to null so that the renderer can detect this.
 
             initShader: ( aShaderProgram ) ->
                 aShaderProgram.vertexPositionAttribute = @_gl.getAttribLocation aShaderProgram, 'aVertexPosition'
