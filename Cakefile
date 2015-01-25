@@ -2,7 +2,7 @@ colors = require 'colors'
 fs     = require 'fs'
 {exec} = require 'child_process'
 
-source_directory = 'src/app'
+source_directory = 'public/src/app'
 output_directory = 'public/js/app'
 
 # compile
@@ -11,7 +11,7 @@ output_directory = 'public/js/app'
 # This will compile the source.
 task 'compile', 'Compile the source.', ->
     console.log "Compiling '#{source_directory}'."
-    compile_process = exec "coffee --output #{output_directory} --compile #{source_directory}", (err, stdout, stderr) ->
+    compile_process = exec "coffee --map --output #{output_directory} --compile #{source_directory}", (err, stdout, stderr) ->
         if err
             console.log 'Something went wrong...'.red
             throw err
@@ -31,7 +31,7 @@ task 'compile', 'Compile the source.', ->
 # This will compile the source and start watching for changes until cancelled.
 task 'watch', 'Compile the source and start watching for changes.', ->
     console.log "Watching '#{source_directory}' for changes."
-    watch_process = exec "coffee --output #{output_directory} --watch #{source_directory}", (err, stdout, stderr) ->
+    watch_process = exec "coffee --map --output #{output_directory} --watch #{source_directory}", (err, stdout, stderr) ->
         if err
             console.log 'Something went wrong...'.red
             throw err

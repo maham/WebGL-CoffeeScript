@@ -99,9 +99,13 @@ later.
 
 createShader
 ------------
-A shader program is the 
-Here we combine the fragment and vertex shader into a shader program. This is done by first creating the shader program
-itself, attaching the shaders to it and last linking the program. Failure to link will result in an exception.
+_A shader program is the combination of a vertex shader and a fragment shader._
+
+The shader program is created with `gl.createProgram`. The vertex- and fragment shaders are attached to the program with
+`gl.attachShader` after they have been compiled. The compilation is done with the utility method `compileShader`. After
+attaching the shaders to the program the program is linked with `gl.linkProgram`. If the result from calling
+`gl.getProgramParameter` for the parameter `gl.LINK_STATUS` isn't `true` an error is thrown with the program log
+inserted. If everything went fine the program is returned.
 
             createShader: ( fragmentShaderSource, vertexShaderSource ) ->
                 shaderProgram = @_gl.createProgram()
@@ -132,10 +136,10 @@ shader log is thrown. If everything went fine the shader is passed back as the r
                 @_gl.shaderSource newShader, someShaderCode
                 @_gl.compileShader newShader
 
-                unless @_gl.getShaderParameter shader, @_gl.COMPILE_STATUS
+                unless @_gl.getShaderParameter newShader, @_gl.COMPILE_STATUS
                     throw new Error "Error while compiling #{shaderType} shader: #{@_gl.getShaderInfoLog shader}"
 
-                return shader
+                return newShader
 
 initShader
 ----------
@@ -145,29 +149,29 @@ returned and stored as a property of the shader program. If the attribute isn't 
 corresponding variable is set to null so that the renderer can detect this.
 
             initShader: ( aShaderProgram ) ->
-                aShaderProgram.vertexPositionAttribute = @_gl.getAttribLocation aShaderProgram, 'aVertexPosition'
-                if aShaderProgram.vertexPositionAttribute >= 0
-                    @_gl.enableVertexAttribArray aShaderProgram.vertexPositionAttribute
+                aShaderProgram.aVertexPosition = @_gl.getAttribLocation aShaderProgram, 'aVertexPosition'
+                if aShaderProgram.aVertexPosition >= 0
+                    @_gl.enableVertexAttribArray aShaderProgram.aVertexPosition
                 else
-                    aShaderProgram.vertexPositionAttribute = null
+                    aShaderProgram.aVertexPosition = null
 
-                aShaderProgram.vertexNormalAttribute = @_gl.getAttribLocation aShaderProgram, 'aVertexNormal'
-                if aShaderProgram.vertexNormalAttribute >= 0
-                    @_gl.enableVertexAttribArray aShaderProgram.vertexNormalAttribute
+                aShaderProgram.aVertexNormal = @_gl.getAttribLocation aShaderProgram, 'aVertexNormal'
+                if aShaderProgram.aVertexNormal >= 0
+                    @_gl.enableVertexAttribArray aShaderProgram.aVertexNormal
                 else
-                    aShaderProgram.vertexNormalAttribute = null
+                    aShaderProgram.aVertexNormal = null
 
-                aShaderProgram.textureCoordinateAttribute = @_gl.getAttribLocation aShaderProgram, 'aTextureCoordinate'
-                if aShaderProgram.textureCoordinateAttribute >= 0
-                    @_gl.enableVertexAttribArray aShaderProgram.textureCoordinateAttribute
+                aShaderProgram.aTextureCoordinate = @_gl.getAttribLocation aShaderProgram, 'aTextureCoordinate'
+                if aShaderProgram.aTextureCoordinate >= 0
+                    @_gl.enableVertexAttribArray aShaderProgram.aTextureCoordinate
                 else
-                    aShaderProgram.textureCoordinateAttribute = null
+                    aShaderProgram.aTextureCoordinate = null
  
                 #aShaderProgram.pMatrixUniform = @_gl.getUniformLocation aShaderProgram, 'uPMatrix'
                 #throw Error 'Failed to get reference to "uPMatrix" in shader program.' unless aShaderProgram.pMatrixUniform?
 
-                aShaderProgram.mvMatrixUniform = @_gl.getUniformLocation aShaderProgram, 'uMVMatrix'
-                throw Error 'Failed to get reference to "uMVMatrix" in shader program.' unless aShaderProgram.mvMatrixUniform?
+                aShaderProgram.uMVMatrix = @_gl.getUniformLocation aShaderProgram, 'uMVMatrix'
+                throw Error 'Failed to get reference to "uMVMatrix" in shader program.' unless aShaderProgram.uMVMatrix?
 
 createMesh
 ----------
@@ -213,7 +217,7 @@ setMvMatrix
                 mvMatrix = mat4.create()
                 mat4.multiply mvMatrix, modelMatrix, viewMatrix
                 mat4.multiply mvMatrix, mvMatrix, projectionMatrix
-                @_gl.uniformMatrix4fv @_shaderProgram.mvMatrixUniform, false, mvMatrix
+                @_gl.uniformMatrix4fv @_shaderProgram.uMVMatrix, false, mvMatrix
 
 pushMatrix
 ----------
@@ -249,9 +253,9 @@ Then for each mesh, push the correct buffers to GL.
                 for mesh in meshes
                     @_gl.useProgram mesh.shader
                     @_gl.bindBuffer @_gl.ARRAY_BUFFER, mesh.vertexBuffer
-                    @_gl.vertexAttribPointer mesh.shader.vertexPositionAttribute, 3, @_gl.FLOAT, false, 32, 0 if mesh.shader.vertexPositionAttribute?
-                    @_gl.vertexAttribPointer mesh.shader.vertexNormalAttribute, 3, @_gl.FLOAT, false, 32, 12 if mesh.shader.vertexNormalAttribute?
-                    @_gl.vertexAttribPointer mesh.shader.textureCoordinateAttribute, 2, @_gl.FLOAT, false, 32, 24 if mesh.shader.textureCoordinateAttribute?
+                    @_gl.vertexAttribPointer mesh.shader.aVertexPosition, 3, @_gl.FLOAT, false, 32, 0 if mesh.shader.aVertexPosition?
+                    @_gl.vertexAttribPointer mesh.shader.aVertexNormal, 3, @_gl.FLOAT, false, 32, 12 if mesh.shader.aVertexNormal?
+                    @_gl.vertexAttribPointer mesh.shader.aTextureCoordinate, 2, @_gl.FLOAT, false, 32, 24 if mesh.shader.aTextureCoordinate?
                     @_gl.bindBuffer @_gl.ELEMENT_ARRAY_BUFFER, mesh.indexBuffer
 
 Create a model matrix representing the translation and rotation of the object. Multiply the model matrix with the view
@@ -264,7 +268,7 @@ matrix. Multiply that matrix with the projectionMatrix and pass it in to the sha
                     mat4.rotateZ modelMatrix, modelMatrix, ( @deg2Rad mesh.rotation[2] )
                     mat4.multiply modelMatrix, viewMatrix, modelMatrix
                     mat4.multiply modelMatrix, @_pMatrix, modelMatrix
-                    @_gl.uniformMatrix4fv mesh.shader.mvMatrixUniform, false, modelMatrix
+                    @_gl.uniformMatrix4fv mesh.shader.uMVMatrix, false, modelMatrix
 
 Finally draw the mesh as triangles.
 
