@@ -1,6 +1,5 @@
 GL
 ==
-
 GL is the central object handling WebGL calls. Currently it's taking care of every function that needs the gl object.
 
 Dependencies
@@ -120,7 +119,7 @@ inserted. If everything went fine the program is returned.
 
 compileShader
 -------------
-_To use the shaders they will have to be compiled. Shaders for WebGL is written in [GLSL](https://www.khronos.org/webgl/ 
+_To use the shaders they will have to be compiled. Shaders for WebGL is written in [GLSL](https://www.khronos.org/webgl/
 "More info found here."). Pre-compiled shaders are quite unlikely to appear in WebGL as it's really a program running on
 the graphics card and it would raise some security concerns._
 
@@ -166,7 +165,7 @@ corresponding variable is set to null so that the renderer can detect this.
                     @_gl.enableVertexAttribArray aShaderProgram.aTextureCoordinate
                 else
                     aShaderProgram.aTextureCoordinate = null
- 
+
                 #aShaderProgram.pMatrixUniform = @_gl.getUniformLocation aShaderProgram, 'uPMatrix'
                 #throw Error 'Failed to get reference to "uPMatrix" in shader program.' unless aShaderProgram.pMatrixUniform?
 
@@ -273,4 +272,3 @@ matrix. Multiply that matrix with the projectionMatrix and pass it in to the sha
 Finally draw the mesh as triangles.
 
                     @_gl.drawElements @_gl.TRIANGLES, mesh.numIndices, @_gl.UNSIGNED_SHORT, 0
-    

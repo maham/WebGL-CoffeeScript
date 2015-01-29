@@ -19,14 +19,22 @@ the pace going. Then we use [GL](gl.litcoffee) as the interface towards WebGL.
 
 constructor
 -----------
-Before starting the game loop we need to know a few things about the game. The FPS is the number of frames that we will
-lock the game to and we will need a couple of shaders for the rendering.
+Before starting the game loop we need to know a few things about the game and its environment. The FPS is the number of
+frames that we will lock the game to. The ID of the element where the game should be rendered. And we will need a couple
+of shaders for the rendering.
+
+The `@metronome` will take care of keeping the pace of the game. Every `Tick` it emits will result in a call to `@loop`.
+`@gl` will hold an instance of the WebGL interface class. After setting it up with a reference to the DOM element ID
+given earlier the vertex- and fragment shader are compiled into a shader program and set initialized.
+
+_NOTE: Each material or mesh or something will later have it's own reference to the shader it wishes to be rendered
+with._
 
             constructor: ( FPS, canvasElementID, vertexShaderSource, fragmentShaderSource ) ->
                 @metronome = new Metronome FPS
                 @metronome.on "Tick", @loop
-                @gl = new GL canvasElementID
 
+                @gl = new GL canvasElementID
                 @shader = @gl.createShader fragmentShaderSource, vertexShaderSource
                 @gl.initShader @shader
 
